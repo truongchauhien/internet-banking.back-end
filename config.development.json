@@ -1,0 +1,11 @@
+{
+    "env": "development",
+    "port": 3000,
+    "database": {
+        "host": "localhost",
+        "port": 3306,
+        "userName": "root",
+        "password": "Th3B3stP@ssw0rd3v3r",
+        "name": "InternetBanking"
+    }
+}
