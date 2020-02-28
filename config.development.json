@@ -4,8 +4,9 @@
     "database": {
         "host": "localhost",
         "port": 3306,
-        "userName": "root",
+        "user": "root",
         "password": "Th3B3stP@ssw0rd3v3r",
         "name": "InternetBanking"
-    }
+    },
+    "tokenSecretKey": "S3cretK3y_"
 }
