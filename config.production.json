@@ -8,5 +8,14 @@
         "password": "Th3B3stP@ssw0rd3v3r",
         "name": "InternetBanking"
     },
-    "tokenSecretKey": "S3cretK3y_"
+    "tokenSecretKey": "S3cretK3y_",
+    "smtp": {
+        "host": "smtp.ethereal.email",
+        "port": 587,
+        "secure": false,
+        "auth": {
+            "user": "herman.johnson88@ethereal.email",
+            "pass": "tgfBnH5UMHU8ppEadz"
+        }
+    }
 }

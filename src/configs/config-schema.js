@@ -22,7 +22,7 @@ const configSchema = convict({
             default: 3306,
             format: 'port'
         },
-        userName: {
+        user: {
             default: 'root'
         },
         password: {
@@ -30,6 +30,32 @@ const configSchema = convict({
         },
         name: {
             default: 'InternetBanking'
+        }
+    },
+    tokenSecretKey: {
+        default: 'shhhhh'
+    },
+    smtp: {
+        host: {
+            default: 'localhost'
+        },
+        port: {
+            format: 'port',
+            default: 578
+        },
+        secure: {
+            format: Boolean,
+            default: false
+        },
+        auth: {
+            user: {
+                format: 'String',
+                default: null
+            },
+            pass: {
+                format: 'String',
+                default: null
+            }
         }
     }
 });
