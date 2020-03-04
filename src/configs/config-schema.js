@@ -35,6 +35,9 @@ const configSchema = convict({
     tokenSecretKey: {
         default: 'shhhhh'
     },
+    recaptchaSecretKey: {
+        default: ''
+    },
     smtp: {
         host: {
             default: 'localhost'

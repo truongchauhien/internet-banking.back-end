@@ -9,6 +9,7 @@
         "name": "InternetBanking"
     },
     "tokenSecretKey": "S3cretK3y_",
+    "recaptchaSecretKey": "6LdL4D8UAAAAALFz1qpupKxSoHcAovthGQrm6ptO",
     "smtp": {
         "host": "smtp.ethereal.email",
         "port": 587,
