@@ -20,9 +20,9 @@ export const query = (sql, values) => {
     return new Promise((resolve, reject) => {
         pool.query(sql, values, (error, results, fields) => {
             if (error) {
-                resolve([results, fields]);
-            } else {
                 reject(error);
+            } else {
+                resolve([results, fields]);
             }
         });
     });
