@@ -1,7 +1,7 @@
-import { query } from '../database/mysql-db.js';
+import { pool_query } from '../database/mysql-db.js';
 
 export const getByUserName = async userName => {
-    const [results, fields] = await query('SELECT * FROM customers WHERE userName = ?', [userName]);
+    const [results, fields] = await pool_query('SELECT * FROM customers WHERE userName = ?', [userName]);
     if (results) {
         return results[0];
     }
@@ -10,7 +10,7 @@ export const getByUserName = async userName => {
 }
 
 export const getByEmail = async email => {
-    const [results, fields] = await query('SELECT * FROM customers WHERE email = ?', [email]);
+    const [results, fields] = await pool_query('SELECT * FROM customers WHERE email = ?', [email]);
     if (results) {
         return results[0];
     }
@@ -19,7 +19,7 @@ export const getByEmail = async email => {
 };
 
 export const getById = async id => {
-    const [results] = await query('SELECT * FROM customers WHERE id = ?', [id]);
+    const [results] = await pool_query('SELECT * FROM customers WHERE id = ?', [id]);
     if (results) {
         return results[0];
     }
@@ -28,6 +28,6 @@ export const getById = async id => {
 }
 
 export const updateRefreshToken = async (id, refreshToken) => {
-    const [results, fields] = await query('UPDATE customers SET refreshToken = ? WHERE id = ?', [refreshToken, id]);
+    const [results, fields] = await pool_query('UPDATE customers SET refreshToken = ? WHERE id = ?', [refreshToken, id]);
     return results.affectedRows;
 };
