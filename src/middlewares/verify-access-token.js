@@ -17,21 +17,24 @@ export const verifyAccessToken = async (req, res, next) => {
         });
     }
 
-    const [result, error, decoded] = await (new Promise((resolve, reject) => {
-        jwt.verify(accessToken, TOKEN_SECRET_KEY, (err, decoded) => {
-            if (err) {
-                reject([false, err, decoded]);
-            } else {
-                resolve([true, err, decoded]);
-            }
-        });
-    }));
-
-    if (!result) {
+    let decoded;
+    try {
+        decoded = await(new Promise((resolve, reject) => {
+            jwt.verify(accessToken, TOKEN_SECRET_KEY, (err, decoded) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(decoded);
+                }
+            });
+        }));
+    } catch (err) {
         return res.status(401).json({
             message: 'Invalid access token.'
         });
     }
+
+    req.auth = _.pick(decoded.payload, 'userId');
 
     next();
 };
