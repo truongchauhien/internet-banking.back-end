@@ -22,6 +22,7 @@ const generateHttpErrorClasses = () => {
                 constructor(...params) {
                     super(code, name, ...params);
                     Error.captureStackTrace(this, this.constructor);
+                    // 'this' will be automatically binded to a proper object by 'new' operator.
                 }
             }
         };
