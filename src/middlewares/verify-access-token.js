@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import config from '../configs/config-schema.js';
+import { HttpErrorClasses } from '../controllers/extensions/http-error.js';
 
 const TOKEN_SECRET_KEY = config.get('tokenSecretKey');
 
@@ -12,14 +13,13 @@ export const verifyAccessToken = async (req, res, next) => {
     const { authenticationHeader } = req.header('Authentication');
     const [authenticationSchema, accessToken] = authenticationHeader.split(' ');
     if (authenticationSchema !== 'Bearer') {
-        return res.status(401).json({
-            message: 'Invalid authentication schema.'
-        });
+        // Invalid authentication schema.
+        throw new HttpErrorClasses.Unauthorized();
     }
 
     let decoded;
     try {
-        decoded = await(new Promise((resolve, reject) => {
+        decoded = await (new Promise((resolve, reject) => {
             jwt.verify(accessToken, TOKEN_SECRET_KEY, (err, decoded) => {
                 if (err) {
                     reject(err);
@@ -29,12 +29,11 @@ export const verifyAccessToken = async (req, res, next) => {
             });
         }));
     } catch (err) {
-        return res.status(401).json({
-            message: 'Invalid access token.'
-        });
+        // Invalid access token.
+        throw new HttpErrorClasses.Unauthorized();
     }
 
-    req.auth = _.pick(decoded.payload, 'userId');
+    req.auth = _.pick(decoded.payload, 'userId', 'userType');
 
     next();
 };
