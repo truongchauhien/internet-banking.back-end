@@ -112,6 +112,21 @@ export const getTransaction = async () => {
     };
 };
 
+export const doTransaction = async (callback) => {
+    const transaction = await getTransaction();
+    try {
+        await transaction.beginTransaction();
+        const ret = await callback(transaction);
+        await transaction.commit();
+        return ret;
+    } catch (ex) {
+        await transaction.rollback();
+        throw ex;
+    } finally {
+        transaction.release();
+    }
+}
+
 (async () => {
     pool.getConnection((err, connection) => {
         if (err) {
