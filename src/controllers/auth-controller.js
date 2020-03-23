@@ -5,6 +5,7 @@ import FormData from 'form-data';
 import jwt from 'jsonwebtoken';
 import createError from 'http-errors';
 import _ from 'lodash';
+import { HttpErrorClasses } from './extensions/http-error.js';
 import {
     getByUserName as getCustomerByUserName,
     updateRefreshToken as updateCustomerRefreshToken,
@@ -26,6 +27,12 @@ import config from '../configs/config-schema.js';
 const TOKEN_SECRET_KEY = config.get('tokenSecretKey');
 const RECAPTCHA_SECRET_KEY = config.get('recaptchaSecretKey');
 
+/**
+ * 
+ * @param {Object} payload
+ * @param {String} payload.userId
+ * @param {String} payload.userType
+ */
 const generateAccessToken = (payload) => {
     return new Promise((resolve, reject) => {
         jwt.sign(payload, TOKEN_SECRET_KEY, { expiresIn: '5m' }, (err, encoded) => {
@@ -72,9 +79,8 @@ export const userLogin = async (req, res, next) => {
 
     const recaptchaResponseJsonObject = await recaptchaResponse.json();
     if (!recaptchaResponseJsonObject.success) {
-        return res.status(400).json({
-            message: 'Google reCAPTCHA challenge was not complete.'
-        });
+        // Google reCAPTCHA challenge was not complete.
+        throw new HttpErrorClasses.BadRequest();
     }
 
     let user = null;
@@ -89,21 +95,16 @@ export const userLogin = async (req, res, next) => {
             user = await getAdministratorByUserName(userName);
             break;
         default:
-            return res.status(400).json({
-                message: 'User type is not provided.'
-            });
+            // User type is not provided.
+            throw new HttpErrorClasses.BadRequest();
     }
 
     if (!user) {
-        return res.status(403).json({
-            message: `The ${userType} does not exist.`
-        });
+        throw new HttpErrorClasses.Forbidden();
     }
 
     if (!await bcrypt.compare(password, user.password)) {
-        return res.status(403).json({
-            message: 'Password is wrong.'
-        });
+        throw new HttpErrorClasses.Forbidden();
     }
 
     const refreshToken = await generateRefreshToken();
@@ -120,7 +121,7 @@ export const userLogin = async (req, res, next) => {
         userId: user.id,
         userType: userType
     });
-    
+
     res.status(200).json({
         accessToken,
         refreshToken,
@@ -150,19 +151,15 @@ export const userRenewToken = async (req, res) => {
             user = getAdministratorById(userId);
             break;
         default:
-            return res.status(400).json({ message: '' });
+            throw new HttpErrorClasses.BadRequest();
     }
 
     if (!user) {
-        return res.status(403).json({
-            message: ''
-        });
+        throw new HttpErrorClasses.Forbidden();
     }
 
     if (user.refreshToken !== refreshToken) {
-        return res.status(403).json({
-            message: ''
-        });
+        throw new HttpErrorClasses.Forbidden();
     }
 
     const newRefreshToken = await generateRefreshToken();
