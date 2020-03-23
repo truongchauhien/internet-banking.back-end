@@ -1,7 +1,10 @@
-import createError from 'http-errors';
+import { HttpError, HttpErrorClasses } from '../controllers/extensions/http-error.js';
+import { MySqlError } from '../database/mysql-error.js';
+import logger from '../modules/logger/logger.js';
 
 /**
- * 
+ * Error Handler Middleware.  
+ * Processing all unhandled errors from controllers and other middlewares.
  * @param {Request} req
  * @param {Response} res
  */
@@ -10,19 +13,14 @@ export const errorHandler = (err, req, res, next) => {
         return next(err);
     }
 
-    if (err instanceof createError.HttpError) {
-        res.status(err.status);
-        if (err.expose) {
-            if (typeof (err.message) === 'string' || err.message instanceof String) {
-                return res.json({ message: err.message });
-            } else {
-                return res.json(err.message);
-            }
-        } else {
-            return res.json({ message: 'Oops!' });
-        }
+    if (err instanceof HttpError) {
+        res.status(err.code).end();
+    } else if (err instanceof MySqlError) {
+        logger.error(err);
+        return res.status(500).end();
     } else {
-        return res.status(500).json({ message: 'Oops!' });
+        logger.error(err);
+        return res.status(500).end();
     }
 };
 
