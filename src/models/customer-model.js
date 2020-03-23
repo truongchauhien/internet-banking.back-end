@@ -1,4 +1,4 @@
-import { pool_query, getTransaction, doTransaction } from '../database/mysql-db.js';
+import { pool_query, doTransaction } from '../database/mysql-db.js';
 
 export const getByUserName = async userName => {
     const [results, fields] = await pool_query('SELECT * FROM customers WHERE userName = ?', [userName]);
@@ -32,61 +32,28 @@ export const updateRefreshToken = async (id, refreshToken) => {
     return results.affectedRows;
 };
 
-export const createCustomer = async (customer) => {
-    return await doTransaction(async (transaction) => {
+export const createCustomer = (customer) => {
+    return doTransaction(async (connection) => {
         let results;
-        
+
         // Create customer login.
-        [results] = await transaction.query('INSERT INTO customers SET ?', customer);
+        [results] = await connection.query('INSERT INTO customers SET ?', customer);
         const customerId = results.insertId;
 
         // Create "current account".
-        [results] = await transaction.query('SELECT * FROM configurations WHERE name = ?', ['nextAccountNumber']);
+        [results] = await connection.query('SELECT * FROM configurations WHERE name = ?', ['nextAccountNumber']);
         const nextAccountNumber = Number(results[0]['value']);
 
         const accountNumber = '1' + nextAccountNumber.toString().padStart(9, '0');
-        [results] = await transaction.query('INSERT INTO accounts SET ?', {
+        [results] = await connection.query('INSERT INTO accounts SET ?', {
             accountNumber: accountNumber,
             customerId: customerId,
             balance: 0,
             accountType: 'CURRENT'
         });
 
-        [results] = await transaction.query('UPDATE configurations SET value = ? WHERE name = ?', [nextAccountNumber + 1, 'nextAccountNumber']);
+        [results] = await connection.query('UPDATE configurations SET value = ? WHERE name = ?', [nextAccountNumber + 1, 'nextAccountNumber']);
 
         return accountNumber;
     });
-
-    /*
-    try {
-        let results;
-        await transaction.beginTransaction();
-
-        // Create customer login.
-        [results] = await transaction.query('INSERT INTO customers SET ?', customer);
-        const customerId = results.insertId;
-
-        // Create "current account".
-        [results] = await transaction.query('SELECT * FROM configurations WHERE name = ?', ['nextAccountNumber']);
-        const nextAccountNumber = Number(results[0]['value']);
-
-        const accountNumber = '1' + nextAccountNumber.toString().padStart(9, '0');
-        [results] = await transaction.query('INSERT INTO accounts SET ?', {
-            accountNumber: accountNumber,
-            customerId: customerId,
-            balance: 0,
-            accountType: 'CURRENT'
-        });
-
-        [results] = await transaction.query('UPDATE configurations SET value = ? WHERE name = ?', [nextAccountNumber + 1, 'nextAccountNumber']);
-
-        await transaction.commit();
-        return accountNumber;
-    } catch (ex) {
-        await transaction.rollback();
-        throw ex;
-    } finally {
-        transaction.release();
-    }
-    */
 };
