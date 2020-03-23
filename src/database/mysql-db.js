@@ -1,5 +1,6 @@
 import mysql from 'mysql';
 import config from '../configs/config-schema.js';
+import { MySqlError } from './mysql-error.js';
 import logger from '../modules/logger/logger.js';
 
 export const pool = mysql.createPool({
@@ -20,7 +21,7 @@ export const pool_query = (sql, values) => {
     return new Promise((resolve, reject) => {
         pool.query(sql, values, (error, results, fields) => {
             if (error) {
-                reject(error);
+                reject(new MySqlError(error));
             } else {
                 resolve([results, fields]);
             }
@@ -31,9 +32,9 @@ export const pool_query = (sql, values) => {
 // this: mysql.Pool
 const _pool_getConnection = function () {
     return new Promise((resolve, reject) => {
-        this.getConnection((err, connection) => {
-            if (err) {
-                reject(err);
+        this.getConnection((error, connection) => {
+            if (error) {
+                reject(new MySqlError(error));
             } else {
                 resolve(connection);
             }
@@ -49,9 +50,9 @@ const _connection_release = function () {
 // this: mysql.Connection
 const _connection_beginTransaction = function () {
     return new Promise((resolve, reject) => {
-        this.beginTransaction(err => {
-            if (err) {
-                reject(err);
+        this.beginTransaction(error => {
+            if (error) {
+                reject(new MySqlError(error));
             } else {
                 resolve();
             }
@@ -62,9 +63,9 @@ const _connection_beginTransaction = function () {
 // this: mysql.Connection
 const _connection_commit = function () {
     return new Promise((resolve, reject) => {
-        this.commit(err => {
-            if (err) {
-                reject(err);
+        this.commit(error => {
+            if (error) {
+                reject(new MySqlError(error));
             } else {
                 resolve();
             }
@@ -75,9 +76,9 @@ const _connection_commit = function () {
 // this: mysql.Connection
 const _connection_rollback = function () {
     return new Promise((resolve, reject) => {
-        this.rollback(err => {
-            if (err) {
-                reject(err);
+        this.rollback(error => {
+            if (error) {
+                reject(new MySqlError(error));
             } else {
                 resolve();
             }
@@ -88,9 +89,9 @@ const _connection_rollback = function () {
 // this: mysql.Connection
 const _connection_query = function (sql, values) {
     return new Promise((resolve, reject) => {
-        this.query(sql, values, (err, results, fields) => {
-            if (err) {
-                reject(err);
+        this.query(sql, values, (error, results, fields) => {
+            if (error) {
+                reject(new MySqlError(error));
             } else {
                 resolve([results, fields]);
             }
@@ -111,7 +112,7 @@ export const getTransaction = async () => {
     };
 };
 
-(async() => {
+(async () => {
     pool.getConnection((err, connection) => {
         if (err) {
             logger.err(err);
