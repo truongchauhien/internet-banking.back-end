@@ -99,7 +99,7 @@ const _connection_query = function (sql, values) {
     });
 };
 
-export const getTransaction = async () => {
+export const getConnection = async () => {
     const pool_getConnection = _pool_getConnection.bind(pool);
     const connection = await pool_getConnection();
     return {
@@ -112,18 +112,27 @@ export const getTransaction = async () => {
     };
 };
 
-export const doTransaction = async (callback) => {
-    const transaction = await getTransaction();
+export const doTransaction = async (query) => {
+    const connection = await getConnection();
     try {
-        await transaction.beginTransaction();
-        const ret = await callback(transaction);
-        await transaction.commit();
+        await connection.beginTransaction();
+        const ret = await query(connection);
+        await connection.commit();
         return ret;
     } catch (ex) {
-        await transaction.rollback();
+        await connection.rollback();
         throw ex;
     } finally {
-        transaction.release();
+        connection.release();
+    }
+};
+
+export const doQuery = async (query) => {
+    const connection = await getConnection();
+    try {
+        return await query(connection);
+    } finally {
+        connection.release();
     }
 }
 
