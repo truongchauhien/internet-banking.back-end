@@ -117,7 +117,8 @@ export const userLogin = async (req, res, next) => {
     }
 
     const accessToken = await generateAccessToken({
-        userId: user.id
+        userId: user.id,
+        userType: userType
     });
     
     res.status(200).json({
@@ -166,7 +167,8 @@ export const userRenewToken = async (req, res) => {
 
     const newRefreshToken = await generateRefreshToken();
     const newAccessToken = await generateAccessToken({
-        userId: user.id
+        userId: user.id,
+        userType: userType
     });
 
     switch (userType) {
@@ -183,6 +185,7 @@ export const userRenewToken = async (req, res) => {
 
     res.status(200).json({
         userId,
+        userType,
         refreshToken: newRefreshToken,
         accessToken: newAccessToken
     });
