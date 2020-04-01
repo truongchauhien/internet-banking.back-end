@@ -94,7 +94,7 @@ const generateHttpErrorClasses = () => {
  *      UnsupportedMediaType: Function
  *      RangeNotSatisfiable: Function
  *      ExpectationFailed: Function
- *      I'maTeapot: Function
+ *      "I'maTeapot": Function
  *      MisdirectedRequest: Function
  *      UnprocessableEntity: Function
  *      Locked: Function
