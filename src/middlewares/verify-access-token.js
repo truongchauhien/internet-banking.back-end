@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import _ from 'lodash';
 import config from '../configs/config-schema.js';
 import { HttpErrorClasses } from '../controllers/extensions/http-error.js';
 
@@ -10,7 +11,7 @@ const TOKEN_SECRET_KEY = config.get('tokenSecretKey');
  * @param {Response} res
  */
 export const verifyAccessToken = async (req, res, next) => {
-    const { authenticationHeader } = req.header('Authentication');
+    const authenticationHeader= req.header('Authentication');
     const [authenticationSchema, accessToken] = authenticationHeader.split(' ');
     if (authenticationSchema !== 'Bearer') {
         // Invalid authentication schema.
@@ -33,7 +34,7 @@ export const verifyAccessToken = async (req, res, next) => {
         throw new HttpErrorClasses.Unauthorized();
     }
 
-    req.auth = _.pick(decoded.payload, 'userId', 'userType');
+    req.auth = _.pick(decoded, ['userId', 'userType']);
 
     next();
 };
