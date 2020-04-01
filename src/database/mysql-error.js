@@ -1,6 +1,6 @@
 export class MySqlError extends Error {
-    constructor(...params) {
-        super(error, ...params);
+    constructor(error, ...params) {
+        super(...params);
         Error.captureStackTrace(this, MySqlError);
         this.name = 'MySqlError';
 
@@ -11,7 +11,7 @@ export class MySqlError extends Error {
         this.sqlState = error.sqlState;
         this.sqlMessage = error.sqlMessage;
 
-        this.error = this.error;
+        this.error = error;
     }
 }
 

@@ -134,7 +134,7 @@ export const doQuery = async (query) => {
     } finally {
         connection.release();
     }
-}
+};
 
 (async () => {
     pool.getConnection((err, connection) => {
