@@ -142,13 +142,13 @@ export const userRenewToken = async (req, res) => {
     let user = null;
     switch (userType) {
         case 'customer':
-            user = getCustomerById(userId);
+            user = await getCustomerById(userId);
             break;
         case 'employee':
-            user = getEmployeeById(userId);
+            user = await getEmployeeById(userId);
             break;
         case 'administrator':
-            user = getAdministratorById(userId);
+            user = await getAdministratorById(userId);
             break;
         default:
             throw new HttpErrorClasses.BadRequest();
