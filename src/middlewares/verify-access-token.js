@@ -11,12 +11,11 @@ const TOKEN_SECRET_KEY = config.get('tokenSecretKey');
  * @param {Response} res
  */
 export const verifyAccessToken = async (req, res, next) => {
-    const authenticationHeader= req.header('Authentication');
+    const authenticationHeader = req.header('Authentication') || req.header('Authorization');
+    if (!authenticationHeader) throw new HttpErrorClasses.Unauthorized();
+
     const [authenticationSchema, accessToken] = authenticationHeader.split(' ');
-    if (authenticationSchema !== 'Bearer') {
-        // Invalid authentication schema.
-        throw new HttpErrorClasses.Unauthorized();
-    }
+    if (authenticationSchema !== 'Bearer') throw new HttpErrorClasses.Unauthorized();
 
     let decoded;
     try {
