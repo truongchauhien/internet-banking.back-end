@@ -1,4 +1,4 @@
-import { generateTOTP } from "./generate-one-time-code.js";
+import { generateTOTP } from "./generate-totp.js";
 
 export const verifyTOTP = (token, secret, window = 0) => {
     for (let errorWindow = -window; errorWindow <= window; ++errorWindow) {

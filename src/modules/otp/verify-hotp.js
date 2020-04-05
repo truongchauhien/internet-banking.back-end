@@ -1,4 +1,4 @@
-import { generateHTOP } from './generate-one-time-code.js';
+import { generateHTOP } from './generate-htop.js';
 
 export const verifyHOTP = (token, secret, counter) => {
     const hotp = generateHTOP(secret, counter);
