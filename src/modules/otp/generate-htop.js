@@ -1,5 +1,5 @@
 import { createHmac } from 'crypto';
-import { decodeSecret } from './generate-secret.js';
+import decodeSecret from './decode-secret.js';
 
 export const generateHTOP = (secret, counter) => {
     const decodedSecret = decodeSecret(secret);
@@ -25,7 +25,4 @@ export const generateHTOP = (secret, counter) => {
     return hotp;
 };
 
-export const generateTOTP = (secret, timestep = 30000, window = 0) => {
-    const counter = Math.floor(Date.now() / timestep);
-    return generateHTOP(secret, counter + window);
-};
+export default generateHTOP;
