@@ -18,5 +18,8 @@
             "user": "herman.johnson88@ethereal.email",
             "pass": "tgfBnH5UMHU8ppEadz"
         }
+    },
+    "emailSenders": {
+        "otp": "otp-nonreply@mail.test-bank.vn"
     }
 }

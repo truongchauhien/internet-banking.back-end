@@ -60,6 +60,11 @@ const configSchema = convict({
                 default: null
             }
         }
+    },
+    emailSenders: {
+        otp: {
+            default: 'otp-nonreply@mail.test-bank.vn'
+        }
     }
 });
 
