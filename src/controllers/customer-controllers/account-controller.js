@@ -29,3 +29,14 @@ export const getAccountTransactions = async (req, res) => {
         transactions: transactions
     });
 };
+
+export const getAccountByAccountNumber = async (req, res) => {
+    const { userId: customerId } = req.auth;
+    const { accountNumber } = req.params;
+
+    const account = await accountModel.getAccountByAccountNumber(accountNumber);
+    if (!account) throw new HttpErrorClasses.NotFound();
+    if (customerId !== account.customerId) throw new HttpErrorClasses.Forbidden();
+
+    return res.status(200).json(account);
+};
