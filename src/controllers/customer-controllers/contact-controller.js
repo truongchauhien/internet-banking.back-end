@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import * as contactModel from '../../models/contact-model.js';
 import { HttpErrorClasses } from '../extensions/http-error.js';
 
@@ -17,7 +18,7 @@ export const createContact = async (req, res) => {
         customerId: customerId
     };
     const contactId = await contactModel.createContact(contact);
-    return res.status(200).json({
+    return res.status(201).json({
         ...contact,
         id: contactId
     });
