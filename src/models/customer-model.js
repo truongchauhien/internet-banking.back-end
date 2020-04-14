@@ -1,4 +1,4 @@
-import { pool_query, doTransaction } from '../database/mysql-db.js';
+import { pool_query, doTransaction, doQuery } from '../database/mysql-db.js';
 
 export const getByUserName = async userName => {
     const [results, fields] = await pool_query('SELECT * FROM customers WHERE userName = ?', [userName]);
@@ -25,7 +25,20 @@ export const getById = async id => {
     }
 
     return null;
-}
+};
+
+export const getByAccountNumber = async accountNumber => {
+    const [results] = await pool_query(
+        'SELECT customers.id, customers.userName, customers.password, ' +
+        '       customers.fullName, customers.email, customers.otpSecret, ' +
+        '       customers.refreshToken ' +
+        'FROM customers ' +
+        'INNER JOIN accounts ON accounts.customerId = customers.id ' +
+        'WHERE accounts.accountNumber = ?', [accountNumber]);
+
+    if (Array.isArray(results) && results.length > 0) return results[0];
+    return null;
+};
 
 export const updateRefreshToken = async (id, refreshToken) => {
     const [results, fields] = await pool_query('UPDATE customers SET refreshToken = ? WHERE id = ?', [refreshToken, id]);
