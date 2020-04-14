@@ -6,9 +6,8 @@ export const verifyTOTP = (token, secret, window = 0) => {
         if (token === totp) {
             return true;
         }
-
-        return false;
     }
+    return false;
 };
 
 export default verifyTOTP;
