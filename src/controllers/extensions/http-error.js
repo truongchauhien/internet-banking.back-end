@@ -1,11 +1,12 @@
 import { STATUS_CODES } from 'http';
 
 export class HttpError extends Error {
-    constructor(code, name, ...params) {
-        super(...params);
+    constructor(code, name, meta) {
+        super(STATUS_CODES[code] || '');
 
         this.code = code;
         this.name = name;
+        this.meta = meta;
     }
 }
 
@@ -19,8 +20,8 @@ const generateHttpErrorClasses = () => {
         const name = STATUS_CODES[code].replace(/\s/g, '');
         const ____ = {
             [name]: class extends HttpError {
-                constructor(...params) {
-                    super(code, name, ...params);
+                constructor(meta) {
+                    super(code, name, meta);
                     Error.captureStackTrace(this, this.constructor);
                     // 'this' will be automatically binded to a proper object by 'new' operator.
                 }
