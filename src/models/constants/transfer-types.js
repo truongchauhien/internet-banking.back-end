@@ -1,0 +1,7 @@
+export const TRANSFER_TYPES = {
+    INTRABANK_TRANSFER: 1,
+    INTERBANK_TRANSFER: 2,
+    PAY_DEBT_TRANSFER: 3
+};
+
+export default TRANSFER_TYPES;
