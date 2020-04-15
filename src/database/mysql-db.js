@@ -1,5 +1,5 @@
 import mysql from 'mysql';
-import config from '../configs/config-schema.js';
+import config from '../configs/configs.js';
 import { MySqlError } from './mysql-error.js';
 import logger from '../modules/logger/logger.js';
 

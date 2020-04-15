@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import _ from 'lodash';
-import config from '../configs/config-schema.js';
+import config from '../configs/configs.js';
 import { HttpErrorClasses } from '../controllers/extensions/http-error.js';
 
 const TOKEN_SECRET_KEY = config.get('tokenSecretKey');

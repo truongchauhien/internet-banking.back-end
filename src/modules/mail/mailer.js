@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import config from '../../configs/config-schema.js';
+import config from '../../configs/configs.js';
 import logger from '../logger/logger.js';
 
 export const transporter = nodemailer.createTransport({
@@ -18,6 +18,6 @@ transporter.verify((err, success) => {
     } else {
         logger.info('SMTP server is ready to take our messages.');
     }
-})
+});
 
 export default transporter;

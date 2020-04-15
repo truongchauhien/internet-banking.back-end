@@ -1,5 +1,5 @@
 import mailer from './mailer.js';
-import config from '../../configs/config-schema.js';
+import config from '../../configs/configs.js';
 
 const OTP_SENDER = config.get('emailSenders.otp');
 

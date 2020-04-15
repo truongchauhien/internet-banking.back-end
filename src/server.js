@@ -2,7 +2,7 @@ import http from 'http';
 import express from 'express';
 import morgan from 'morgan';
 import cors from 'cors';
-import config from './configs/config-schema.js';
+import config from './configs/configs.js';
 import logger from './modules/logger/logger.js';
 import errorHandler from './middlewares/error-handling.js';
 import authRouter from './routes/auth-routes.js';

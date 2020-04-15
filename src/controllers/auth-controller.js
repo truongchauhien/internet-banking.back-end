@@ -21,8 +21,7 @@ import {
     updateRefreshToken as updateAdministratorRefreshToken,
     getById as getAdministratorById
 } from '../models/administrator-model.js';
-
-import config from '../configs/config-schema.js';
+import config from '../configs/configs.js';
 
 const TOKEN_SECRET_KEY = config.get('tokenSecretKey');
 const RECAPTCHA_SECRET_KEY = config.get('recaptchaSecretKey');
