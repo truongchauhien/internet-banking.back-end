@@ -9,10 +9,14 @@ import authRouter from './routes/auth-routes.js';
 import customerRouter from './routes/customer-routes.js';
 import employeeRouter from './routes/employee-routes.js';
 import administratorRouter from './routes/administrator-routes.js';
-import { httpServerIntegrate } from './web-socket/web-socket.js';
+import { integrate as integrateWebSocket, setup as setupWebSocket } from './web-socket/web-socket.js';
+import { setup as setupThirdPartyBankingApi } from './modules/third-party-banking-api/third-party-banking-api.js';
+import { setup as setupRabbitMQ } from './modules/rabbitmq/rabbitmq.js';
+import { setup as setupCustomerNotificationService } from './modules/realtime-notifications/customer-notifications.js';
 
 const app = express();
 app.use(express.json());
+app.use(express.query());
 if (config.get('env') === 'development') {
     app.use(morgan('dev'));
     app.use(cors());
@@ -24,10 +28,19 @@ app.use('/administrator-routes', administratorRouter);
 app.use(errorHandler);
 
 const server = http.createServer();
-server.on('request', app);
-httpServerIntegrate(server);
-
 const PORT = config.get('port');
-server.listen(PORT, () => {
-    logger.info(`App listening on port ${PORT}.`);
-}); 
+(async () => {
+    await setupThirdPartyBankingApi();
+    await setupRabbitMQ();
+    await setupWebSocket();
+    await setupCustomerNotificationService();
+
+    server.on('request', app);
+    integrateWebSocket(server);
+    server.listen(PORT, () => {
+        logger.info(`App listening on port ${PORT}.`);
+    });
+})().catch(err => {
+    logger.error(JSON.stringify(err));
+    process.exit(1);
+});
