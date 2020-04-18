@@ -14,7 +14,7 @@ export const findTransactionByAccountNumber = (accountNumber, from, to) => {
         [results] = await connection.query(
             'SELECT ts.id, ts.amount, tst.type, ts.createAt ' +
             'FROM transactions ts ' +
-            'INNER JOIN transactions_types tst ON ts.typeId = tst.id' +
+            'INNER JOIN transaction_types tst ON ts.typeId = tst.id' +
             'WHERE accountId = ? AND WHERE ts.createAt BETWEEN ? AND ?',
             [account.id, from, to]
         );
