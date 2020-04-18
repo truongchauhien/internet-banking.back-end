@@ -4,6 +4,8 @@ import TRANSACTION_TYPES from './constants/transaction-types.js';
 import FEES from './constants/fees.js';
 import CURRENCIES from './constants/currencies.js';
 import TransactionCanceled from './extensions/transaction-canceled.js';
+import TRANSFER_TYPES from './constants/transfer-types.js';
+import DEBT_STATUS from './constants/debt-status.js';
 
 export const createIntrabankTransfer = ({ customerId, fromAccountNumber, toAccountNumber, amount, whoPayFee, message, otp }) => {
     return doTransaction(async (connection) => {
@@ -36,13 +38,31 @@ export const createIntrabankTransfer = ({ customerId, fromAccountNumber, toAccou
     });
 };
 
-export const getTransferById = async (transferId) => {
-    const [results] = await pool_query('SELECT * FROM transfers WHERE id = ?', [transferId]);
-    if (Array.isArray(results) && results.length > 0) {
-        return results[0]
-    };
+export const createPayDebtTransfer = ({ customerId, fromAccountNumber, toAccountNumber, amount, message, otp }) => {
+    return doTransaction(async (connection) => {
+        let results;
+        [results] = await connection.query('SELECT * FROM fees WHERE id = ?', [FEES.INTRA_BANK_TRANSFER]);
+        const fee = results[0];
 
-    return null;
+        const transfer = {
+            customerId,
+            fromAccountNumber,
+            toAccountNumber,
+            amount,
+            fee: fee.amount,
+            currencyId: CURRENCIES.vnd,
+            message,
+            otp,
+            statusId: TRANSFER_STATUS.OTP_PENDING,
+            typeId: TRANSFER_TYPES.PAY_DEBT_TRANSFER
+    };
+        [results] = await connection.query('INSERT INTO transfers SET ?', [transfer]);
+
+        return {
+            id: results.insertId,
+            ...transfer
+};
+    });
 };
 
 export const confirmIntraBankTransfer = (transferId) => {
@@ -122,6 +142,44 @@ export const confirmIntraBankTransfer = (transferId) => {
     });
 };
 
+export const confirmPayDebtTransfer = (transferId) => {
+    return doTransaction(async (connection) => {
+        let results;
+        [results] = await connection.query('SELECT * FROM transfers WHERE id = ?', transferId);
+        const transfer = results[0];
+
+        if (transfer.typeId !== TRANSFER_TYPES.PAY_DEBT_TRANSFER) {
+            throw new TransactionCanceled();
+        }
+
+        [results] = await connection.query('SELECT * FROM accounts WHERE accountNumber = ?', [transfer.fromAccountNumber]);
+        const fromAccount = results[0];
+        [results] = await connection.query('SELECT * FROM accounts WHERE accountNumber = ?', [transfer.toAccountNumber]);
+        const toAccount = results[0];
+
+        let minimumBalance = transfer.amount + transfer.fee;
+        if (fromAccount.balance < minimumBalance) throw new TransactionCanceled();
+
+        [results] = await connection.query('UPDATE accounts SET balance = ? WHERE id = ?', [
+            fromAccount.balance - (transfer.amount + transfer.fee),
+            fromAccount.id
+        ]);
+        [results] = await connection.query('UPDATE accounts SET balance = ? WHERE id = ?', [
+            toAccount.balance + transfer.amount,
+            toAccount.id
+        ]);
+
+        [results] = await connection.query('INSERT INTO transactions (accountId, amount, typeId) VALUES ?', [[
+            [fromAccount.id, -transfer.amount, TRANSACTION_TYPES.PAY_DEBT_TRANSFER],
+            [fromAccount.id, -transfer.fee, TRANSACTION_TYPES.INTRABANK_TRANSFER_FEE],
+            [toAccount.id, transfer.amount, TRANSACTION_TYPES.PAY_DEBT_RECEIVE]
+        ]]);
+
+        [results] = await connection.query('UPDATE transfers SET statusId = ? WHERE id = ?', [TRANSFER_STATUS.COMFIRMED, transferId]);
+
+        [results] = await connection.query('UPDATE debts SET statusId = ? WHERE transferId = ?', [DEBT_STATUS.PAID], transfer.id);
+    });
+};
 export const makeTransferExpired = async (transferId) => {
     await pool_query('UPDATE transfers SET statusId = ? WHERE id = ?', TRANSFER_STATUS.OVERTIME, transferId);
 };
