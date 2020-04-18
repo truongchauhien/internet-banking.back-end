@@ -21,5 +21,11 @@
     },
     "emailSenders": {
         "otp": "otp-nonreply@mail.test-bank.vn"
+    },
+    "rabbitMQ": {
+        "host": "localhost",
+        "port": 5672,
+        "user": "root",
+        "pass": "Th3B3stP@ssw0rd3v3r"
     }
 }

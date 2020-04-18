@@ -3,7 +3,7 @@ import convict from 'convict';
 
 dotenv.config();
 
-const configSchema = convict({
+const configs = convict({
     env: {
         doc: 'The application environment.',
         format: ['production', 'development'],
@@ -65,11 +65,17 @@ const configSchema = convict({
         otp: {
             default: 'otp-nonreply@mail.test-bank.vn'
         }
+    },
+    rabbitMQ: {
+        host: 'localhost',
+        port: 5672,
+        user: 'guest',
+        pass: 'guest'
     }
 });
 
-const env = configSchema.get('env');
-configSchema.loadFile(`./config.${env}.json`);
-configSchema.validate({ allowed: 'strict' });
+const env = configs.get('env');
+configs.loadFile(`./config.${env}.json`);
+configs.validate({ allowed: 'strict' });
 
-export default configSchema;
+export default configs;
