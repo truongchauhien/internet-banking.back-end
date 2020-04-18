@@ -4,7 +4,6 @@ import * as accountController from '../../controllers/customer-controllers/accou
 
 const router = express.Router();
 
-// Internal system accounts only.
 router.get('/', asyncWrapper(accountController.getAccounts));
 router.get('/:accountNumber', asyncWrapper(accountController.getAccountByAccountNumber));
 router.get('/:accountNumber/transactions', asyncWrapper(accountController.getAccountTransactions));
