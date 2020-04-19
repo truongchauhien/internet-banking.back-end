@@ -14,7 +14,7 @@ router.use(asyncWrapper(verifyAccessToken));
 router.use('/accounts', accountRouter);
 router.use('/contacts', contactRouter);
 router.use('/query', queryRouter);
-router.use('/transfer', transferRouter);
+router.use('/transfers', transferRouter);
 router.use('/debts', debtRouter);
 router.use('/notifications', notificationRouter);
 
