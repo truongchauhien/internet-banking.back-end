@@ -33,20 +33,27 @@ export const createDebt = async (req, res) => {
 
 export const getDebts = async (req, res) => {
     const { userId: customerId } = req.auth;
-    const { type, fromTime, toTime, newOnly, pageNumber } = req.query;
+    const { type, fromTime, toTime, newOnly: rawNewOnly, pageNumber: rawPageNumber } = req.query;
 
-    if (!Array.isArray(types) || types.length < 1) {
-        throw new HttpErrorClasses.BadRequest();
-    }
+    let newOnly = rawNewOnly === 'true';
+    let pageNumber = Number.parseInt(rawPageNumber) || 1;
+    if (pageNumber <= 0) throw new HttpErrorClasses.BadRequest();
 
     const pageSize = 10;
+
     let debts, totalPages;
-    if (type === 'sent') {
-        [totalPages, debts] = await debtModel.findBySender(customerId, new Date(fromTime), new Date(toTime), newOnly, pageSize, pageNumber);
-    } else if (type === 'received') {
-        [totalPages, debts] = await debtModel.findByReceiver(customerId, new Date(fromTime), new Date(toTime), newOnly, pageSize, pageNumber);
-    } else {
-        throw new HttpErrorClasses.BadRequest();
+    switch (type) {
+        case 'sent':
+            [totalPages, debts] = await debtModel.findBySender(customerId, new Date(fromTime), new Date(toTime), newOnly, pageSize, pageNumber);
+            break;
+        case 'received':
+            [totalPages, debts] = await debtModel.findByReceiver(customerId, new Date(fromTime), new Date(toTime), newOnly, pageSize, pageNumber);
+            break;
+        case 'both':
+            [totalPages, debts] = await debtModel.findByBothSenderAndReceiver(customerId, new Date(fromTime), new Date(toTime), newOnly, pageSize, pageNumber);
+            break;
+        default:
+            throw new HttpErrorClasses.BadRequest();
     }
 
     return res.status(200).json({
