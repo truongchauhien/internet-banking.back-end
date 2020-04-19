@@ -46,23 +46,38 @@ export const cancelDebt = ({ debtId, changerId, canceledReason }) => {
     });
 };
 
-function createFinder(fieldContainerCustomerId) {
+function createFinder(customerIdFieldName) {
     return (customerId, fromTime, toTime, newOnly, pageSize, pageNumber) => {
         return doQuery(async (connection) => {
-            const condition = mysql.format(
-                'WHERE ?? = ? ' + (newOnly ? `AND statusId = ${DEBT_STATUS.NEW} ` : '') +
-                'ORDER BY createdAt ' +
-                'WHERE createdAt > ? AND createdAt < ? '
-                [fieldContainerCustomerId, customerId, fromTime, toTime]
+            let results;
+            [results] = await connection.query(
+                'SELECT COUNT(id) as totalRecords ' +
+                'FROM debts ' +
+                `WHERE createdAt >= ${mysql.escape(fromTime)} AND createdAt <= ${mysql.escape(toTime)} ` +
+                `${customerIdFieldName !== null ?
+                    `AND ${mysql.escapeId(customerIdFieldName)} = ${mysql.escape(customerId)}` :
+                    `AND ( ${mysql.escapeId('fromCustomerId')} = ${mysql.escape(customerId)} OR ${mysql.escapeId('toCustomerId')} = ${mysql.escape(customerId)} )`} ` +
+                `${newOnly ? `AND statusId = ${mysql.escape(DEBT_STATUS.NEW)} ` : ''} ` +
+                'ORDER BY createdAt'
             );
 
-            let results;
-            [results] = await connection.query('SELECT COUNT(id) as totalRecords FROM debts ' + condition);
             const totalRecords = results[0].totalRecords;
             const totalPages = Math.ceil(totalRecords / pageSize);
             const offset = (pageNumber - 1) * pageSize;
             [results] = await connection.query(
-                'SELECT * FROM debts ' + condition + ' ' +
+                'SELECT debts.id, debts.fromCustomerId, debts.toCustomerId, debts.message, debts.canceledReason, debts.amount, debts.statusId, debts.transferId, debts.createdAt, ' +
+                '       c1.fullName AS fromCustomerFullName, c2.fullName AS toCustomerFullName, ' +
+                '       debt_status.status ' +
+                'FROM debts ' +
+                'INNER JOIN customers c1 ON debts.fromCustomerId = c1.id ' +
+                'INNER JOIN customers c2 ON debts.toCustomerId = c2.id ' +
+                'INNER JOIN debt_status ON debts.statusId = debt_status.id ' +
+                `WHERE createdAt >= ${mysql.escape(fromTime)} AND createdAt <= ${mysql.escape(toTime)} ` +
+                `${customerIdFieldName !== null ?
+                    `AND ${mysql.escapeId(customerIdFieldName)} = ${mysql.escape(customerId)}` :
+                    `AND ( ${mysql.escapeId('fromCustomerId')} = ${mysql.escape(customerId)} OR ${mysql.escapeId('toCustomerId')} = ${mysql.escape(customerId)} )`} ` +
+                `${newOnly ? `AND statusId = ${mysql.escape(DEBT_STATUS.NEW)} ` : ''} ` +
+                'ORDER BY createdAt ' +
                 'LIMIT ? OFFSET ?',
                 [pageSize, offset]
             );
@@ -78,6 +93,10 @@ export const findBySender = (customerId, fromTime, toTime, newOnly, pageSize, pa
 
 export const findByReceiver = (customerId, fromTime, toTime, newOnly, pageSize, pageNumber) => {
     return createFinder('toCustomerId')(customerId, fromTime, toTime, newOnly, pageSize, pageNumber);
+};
+
+export const findByBothSenderAndReceiver = (customerId, fromTime, toTime, newOnly, pageSize, pageNumber) => {
+    return createFinder(null)(customerId, fromTime, toTime, newOnly, pageSize, pageNumber)
 };
 
 export const getDebtById = async (debtId) => {
