@@ -1,6 +1,6 @@
 import * as accountModel from '../../models/account-model.js';
 import * as transactionModel from '../../models/transaction-model.js';
-import { HttpErrorClasses } from '../extensions/http-error.js';
+import HttpErrors from '../extensions/http-errors.js';
 
 export const getAccounts = async (req, res) => {
     const { userId: customerId } = req.auth;
@@ -34,9 +34,8 @@ export const getAccountByAccountNumber = async (req, res) => {
     const { userId: customerId } = req.auth;
     const { accountNumber } = req.params;
 
-    const account = await accountModel.getAccountByAccountNumber(accountNumber);
-    if (!account) throw new HttpErrorClasses.NotFound();
-    if (customerId !== account.customerId) throw new HttpErrorClasses.Forbidden();
+    if (!account) throw new HttpErrors.NotFound();
+    if (customerId !== account.customerId) throw new HttpErrors.Forbidden();
 
     return res.status(200).json(account);
 };

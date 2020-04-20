@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import _ from 'lodash';
 import config from '../configs/configs.js';
-import { HttpErrorClasses } from '../controllers/extensions/http-error.js';
+import HttpErrors from '../controllers/extensions/http-errors.js';
 
 const TOKEN_SECRET_KEY = config.get('tokenSecretKey');
 
@@ -12,10 +12,10 @@ const TOKEN_SECRET_KEY = config.get('tokenSecretKey');
  */
 export const verifyAccessToken = async (req, res, next) => {
     const authenticationHeader = req.header('Authentication') || req.header('Authorization');
-    if (!authenticationHeader) throw new HttpErrorClasses.Unauthorized();
+    if (!authenticationHeader) throw new HttpErrors.Unauthorized();
 
     const [authenticationSchema, accessToken] = authenticationHeader.split(' ');
-    if (authenticationSchema !== 'Bearer') throw new HttpErrorClasses.Unauthorized();
+    if (authenticationSchema !== 'Bearer') throw new HttpErrors.Unauthorized();
 
     let decoded;
     try {
@@ -30,7 +30,7 @@ export const verifyAccessToken = async (req, res, next) => {
         }));
     } catch (err) {
         // Invalid access token.
-        throw new HttpErrorClasses.Unauthorized();
+        throw new HttpErrors.Unauthorized();
     }
 
     req.auth = _.pick(decoded, ['userId', 'userType']);

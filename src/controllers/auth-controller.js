@@ -3,9 +3,8 @@ import bcrypt from 'bcrypt';
 import fetch from 'node-fetch';
 import FormData from 'form-data';
 import jwt from 'jsonwebtoken';
-import createError from 'http-errors';
 import _ from 'lodash';
-import { HttpErrorClasses } from './extensions/http-error.js';
+import HttpErrors from './extensions/http-errors.js';
 import {
     getByUserName as getCustomerByUserName,
     updateRefreshToken as updateCustomerRefreshToken,
@@ -73,13 +72,15 @@ export const userLogin = async (req, res, next) => {
     });
 
     if (!recaptchaResponse.ok) {
-        return next(new createError.InternalServerError('Can not verify Google reCAPTCHA token.'));
+        throw new HttpErrors.InternalServerError({
+            message: 'Can not verify Google reCAPTCHA token.'
+        });
     }
 
     const recaptchaResponseJsonObject = await recaptchaResponse.json();
     if (!recaptchaResponseJsonObject.success) {
         // Google reCAPTCHA challenge was not complete.
-        throw new HttpErrorClasses.BadRequest();
+        throw new HttpErrors.BadRequest();
     }
 
     let user = null;
@@ -95,15 +96,15 @@ export const userLogin = async (req, res, next) => {
             break;
         default:
             // User type is not provided.
-            throw new HttpErrorClasses.BadRequest();
+            throw new HttpErrors.BadRequest();
     }
 
     if (!user) {
-        throw new HttpErrorClasses.Forbidden();
+        throw new HttpErrors.Forbidden();
     }
 
     if (!await bcrypt.compare(password, user.password)) {
-        throw new HttpErrorClasses.Forbidden();
+        throw new HttpErrors.Forbidden();
     }
 
     const refreshToken = await generateRefreshToken();
@@ -150,15 +151,15 @@ export const userRenewToken = async (req, res) => {
             user = await getAdministratorById(userId);
             break;
         default:
-            throw new HttpErrorClasses.BadRequest();
+            throw new HttpErrors.BadRequest();
     }
 
     if (!user) {
-        throw new HttpErrorClasses.Forbidden();
+        throw new HttpErrors.Forbidden();
     }
 
     if (user.refreshToken !== refreshToken) {
-        throw new HttpErrorClasses.Forbidden();
+        throw new HttpErrors.Forbidden();
     }
 
     const newRefreshToken = await generateRefreshToken();

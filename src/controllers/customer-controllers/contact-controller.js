@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import * as contactModel from '../../models/contact-model.js';
-import { HttpErrorClasses } from '../extensions/http-error.js';
+import HttpErrors from '../extensions/http-errors.js';
 
 export const getContacts = async (req, res) => {
     const { userId: customerId } = req.auth;
@@ -30,11 +30,11 @@ export const deleteContact = async (req, res) => {
 
     const deletedContact = await contactModel.getContactById(contactId);
     if (!deletedContact) {
-        throw new HttpErrorClasses.NotFound();
+        throw new HttpErrors.NotFound();
     }
 
     if (deletedContact.customerId !== customerId) {
-        throw new HttpErrorClasses.Forbidden();
+        throw new HttpErrors.Forbidden();
     }
 
     await contactModel.deleteContact(contactId);
@@ -47,11 +47,11 @@ export const patchContact = async (req, res) => {
 
     const patchedContact = await contactModel.getContactById(contactId);
     if (!patchedContact) {
-        throw new HttpErrorClasses.NotFound();
+        throw new HttpErrors.NotFound();
     }
 
     if (patchedContact.customerId !== customerId) {
-        throw new HttpErrorClasses.Forbidden();
+        throw new HttpErrors.Forbidden();
     }
 
     const updateFields = _.pick(req.body, ['accountNumber', 'name']);

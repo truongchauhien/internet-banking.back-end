@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { HttpErrorClasses } from '../extensions/http-error.js';
+import HttpErrors from '../extensions/http-errors.js';
 import * as debtModel from '../../models/debt-model.js';
 import * as customerModel from '../../models/customer-model.js';
 import {
@@ -12,11 +12,11 @@ export const createDebt = async (req, res) => {
     const { userId: customerId } = req.auth;
     let { toCustomerId, amount, message } = req.body;
 
-    if (customerId === toCustomerId) throw new HttpErrorClasses.BadRequest();
+    if (customerId === toCustomerId) throw new HttpErrors.BadRequest();
 
     const customer = customerModel.getById(customerId);
     const toCustomer = customerModel.getById(toCustomerId);
-    if (!toCustomer) throw new HttpErrorClasses.BadRequest();
+    if (!toCustomer) throw new HttpErrors.BadRequest();
 
     const createdDebt = await debtModel.createDebt({
         fromCustomerId: customerId,
@@ -37,7 +37,7 @@ export const getDebts = async (req, res) => {
 
     let newOnly = rawNewOnly === 'true';
     let pageNumber = Number.parseInt(rawPageNumber) || 1;
-    if (pageNumber <= 0) throw new HttpErrorClasses.BadRequest();
+    if (pageNumber <= 0) throw new HttpErrors.BadRequest();
 
     const pageSize = 10;
 
@@ -53,7 +53,7 @@ export const getDebts = async (req, res) => {
             [totalPages, debts] = await debtModel.findByBothSenderAndReceiver(customerId, new Date(fromTime), new Date(toTime), newOnly, pageSize, pageNumber);
             break;
         default:
-            throw new HttpErrorClasses.BadRequest();
+            throw new HttpErrors.BadRequest();
     }
 
     return res.status(200).json({
@@ -69,7 +69,7 @@ export const cancelDebt = async (req, res) => {
     const { canceledReason } = req.body;
 
     const debt = await debtModel.getDebtById(debtId);
-    if (!debt) throw new HttpErrorClasses.NotFound();
+    if (!debt) throw new HttpErrors.NotFound();
 
     await debtModel.cancelDebt({
         debtId,

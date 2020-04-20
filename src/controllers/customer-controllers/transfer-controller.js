@@ -1,6 +1,6 @@
 import _ from 'lodash';
-import { HttpErrorClasses } from '../extensions/http-error.js';
-import ERRORS from '../extensions/errors.js';
+import HttpErrors from '../extensions/http-errors.js';
+import ERRORS from '../extensions/error-meta.js';
 import generateTOTP from '../../modules/otp/generate-totp.js';
 import verifyTOTP from '../../modules/otp/verify-totp.js';
 import { sendOtpMail } from '../../modules/mail/send-otp-mail.js';
@@ -25,7 +25,7 @@ export const createTransfer = async (req, res) => {
         case 'paydebt':
             await createPayDebtTransfer(req, res);
         default:
-            throw new HttpErrorClasses.BadRequest();
+            throw new HttpErrors.BadRequest();
     }
 };
 
@@ -40,7 +40,7 @@ export const confirmTransfer = async (req, res) => {
         case 'paydebt':
             await confirmPayDebtTransfer(req, res);
         default:
-            throw new HttpErrorClasses.BadRequest();
+            throw new HttpErrors.BadRequest();
     }
 };
 
@@ -49,7 +49,7 @@ export const getTransfer = async (req, res) => {
     const { transferId } = req.params;
 
     const transfer = await transferModel.getTransferById(transferId);
-    if (customerId !== transfer.customerId) throw new HttpErrorClasses.Forbidden();
+    if (customerId !== transfer.customerId) throw new HttpErrors.Forbidden();
 
     const compactTransfer = _.omit(transfer, ['otp']);
     return res.status(200).json({
@@ -62,8 +62,8 @@ async function createIntrabankTransfer(req, res) {
     const { fromAccountNumber, toAccountNumber, amount, message, whoPayFee } = req.body;
 
     const customer = await customerModel.getByAccountNumber(fromAccountNumber);
-    if (!customer) throw new HttpErrorClasses.BadRequest();
-    if (customer.id !== customerId) throw new HttpErrorClasses.Forbidden();
+    if (!customer) throw new HttpErrors.BadRequest();
+    if (customer.id !== customerId) throw new HttpErrors.Forbidden();
 
     const otp = generateTOTP(customer.otpSecret);
     const createdTransfer = await transferModel.createIntrabankTransfer({
@@ -88,8 +88,8 @@ async function createInterbankTransfer(req, res) {
     const { fromAccountNumber, toAccountNumber, toBankId, amount, message, whoPayFee } = req.body;
 
     const customer = await customerModel.getByAccountNumber(fromAccountNumber);
-    if (!customer) throw new HttpErrorClasses.BadRequest();
-    if (customer.id !== customerId) throw new HttpErrorClasses.Forbidden();
+    if (!customer) throw new HttpErrors.BadRequest();
+    if (customer.id !== customerId) throw new HttpErrors.Forbidden();
 
     const otp = generateTOTP(customer.secret);
     const createdTransfer = await transferModel.createInterbankTransfer({
@@ -114,7 +114,7 @@ async function createPayDebtTransfer(req, res) {
     const { debtId } = req.body;
 
     const debt = await debtModel.getDebtById(debtId);
-    if (customerId !== debt.fromCustomerId) throw new HttpErrorClasses.Forbidden();
+    if (customerId !== debt.fromCustomerId) throw new HttpErrors.Forbidden();
     const fromCustomer = await customerModel.getById(debt.fromCustomerId);
     const fromCustomerCurrentAccount = await accountModel.getCurrentAccount(debt.fromCustomerId);
     const toCustomerCurrentAccount = await accountModel.getCurrentAccount(debt.toCustomerId);
@@ -142,11 +142,11 @@ async function confirmIntrabankTransfer(req, res) {
     const { otp } = req.body;
 
     const transfer = await transferModel.getTransferById(transferId);
-    if (!transfer) throw new HttpErrorClasses.NotFound();
-    if (transfer.customerId !== customerId) throw new HttpErrorClasses.Forbidden();
+    if (!transfer) throw new HttpErrors.NotFound();
+    if (transfer.customerId !== customerId) throw new HttpErrors.Forbidden();
     const customer = await customerModel.getById(customerId);
-    if (!verifyTOTP(otp, customer.otpSecret, 10)) throw new HttpErrorClasses.Forbidden(ERRORS.INCORRECT_OTP);
-    if (transfer.otp !== otp) throw new HttpErrorClasses.Forbidden(ERRORS.INCORRECT_OTP);
+    if (!verifyTOTP(otp, customer.otpSecret, 10)) throw new HttpErrors.Forbidden(ERRORS.INCORRECT_OTP);
+    if (transfer.otp !== otp) throw new HttpErrors.Forbidden(ERRORS.INCORRECT_OTP);
 
     await transferModel.confirmIntraBankTransfer(transferId);
 
@@ -161,16 +161,15 @@ async function confirmInterbankTransfer(req, res) {
     const { otp } = req.body;
 
     const transfer = await transferModel.getTransferById(transferId);
-    if (!transfer) throw new HttpErrorClasses.NotFound();
-    if (transfer.customerId !== customerId) throw new HttpErrorClasses.Forbidden();
-    if (!transfer.toBankId) throw new HttpErrorClasses.BadRequest();
+    if (!transfer) throw new HttpErrors.NotFound();
+    if (transfer.customerId !== customerId) throw new HttpErrors.Forbidden();
+    if (!transfer.toBankId) throw new HttpErrors.BadRequest();
     const customer = await customerModel.getById(customerId);
-    if (!verifyTOTP(otp, customer.otpSecret, 10)) throw new HttpErrorClasses.Forbidden();
+    if (!verifyTOTP(otp, customer.otpSecret, 10)) throw new HttpErrors.Forbidden();
 
-    const targetBankingApi = interBankingApis[transfer.toBankId];
-    if (!targetBankingApi) throw new HttpErrorClasses.InternalServerError();
+    if (!targetBankingApi) throw new HttpErrors.InternalServerError();
     const transferCurrency = await currencyModel.getById(transfer.currencyId);
-    if (!transferCurrency) throw new HttpErrorClasses.InternalServerError();
+    if (!transferCurrency) throw new HttpErrors.InternalServerError();
     const apiCallResult = await targetBankingApi.transfer({
         accountNumber: transfer.toAccountNumber,
         amount: transfer.amount,
@@ -179,7 +178,7 @@ async function confirmInterbankTransfer(req, res) {
     });
     if (!apiCallResult) {
         await transferModel.makeTransferRejected(transferId);
-        throw new HttpErrorClasses.InternalServerError();
+        throw new HttpErrors.InternalServerError();
     }
 
     await transferModel.confirmInterBankTransfer(transferId);
@@ -195,13 +194,13 @@ async function confirmPayDebtTransfer(req, res) {
     const { otp } = req.body;
 
     const transfer = await transferModel.getTransferById(transferId);
-    if (!transfer) throw new HttpErrorClasses.NotFound();
-    if (transfer.typeId !== TRANSFER_TYPES.PAY_DEBT_TRANSFER) throw new HttpErrorClasses.BadRequest();
-    if (transfer.customerId !== customerId) throw new HttpErrorClasses.Forbidden();
+    if (!transfer) throw new HttpErrors.NotFound();
+    if (transfer.typeId !== TRANSFER_TYPES.PAY_DEBT_TRANSFER) throw new HttpErrors.BadRequest();
+    if (transfer.customerId !== customerId) throw new HttpErrors.Forbidden();
     
     const customer = await customerModel.getById(customerId);
-    if (!verifyTOTP(otp, customer.otpSecret, 10)) throw new HttpErrorClasses.Forbidden(ERRORS.INCORRECT_OTP);
-    if (transfer.otp !== otp) throw new HttpErrorClasses.Forbidden(ERRORS.INCORRECT_OTP);
+    if (!verifyTOTP(otp, customer.otpSecret, 10)) throw new HttpErrors.Forbidden(ERRORS.INCORRECT_OTP);
+    if (transfer.otp !== otp) throw new HttpErrors.Forbidden(ERRORS.INCORRECT_OTP);
 
     await transferModel.confirmPayDebtTransfer(transferId);
 
