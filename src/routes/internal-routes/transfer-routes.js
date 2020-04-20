@@ -1,6 +1,6 @@
 import express from 'express';
 import asyncWrapper from '../../middlewares/async-wrapper.js';
-import * as transferController from '../../controllers/customer-controllers/transfer-controller.js'
+import * as transferController from '../../controllers/internal-controllers/transfer-controller.js'
 
 const router = express.Router();
 

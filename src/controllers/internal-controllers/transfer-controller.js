@@ -10,7 +10,7 @@ import * as transferModel from '../../models/transfer-model.js';
 import * as debtModel from '../../models/debt-model.js';
 import * as currencyModel from '../../models/currency-model.js';
 import TRANSFER_TYPES from '../../models/constants/transfer-types.js';
-import interBankingApis from '../../modules/third-party-banking-api/third-party-banking-api.js';
+import linkedBankBankingApiModules from '../../modules/linked-banks/banking-api-modules.js';
 import logger from '../../modules/logger/logger.js';
 import { notifyDebtPaid } from '../../modules/realtime-notifications/customer-notifications.js';
 
@@ -116,8 +116,8 @@ async function createPayDebtTransfer(req, res) {
     const debt = await debtModel.getDebtById(debtId);
     if (customerId !== debt.fromCustomerId) throw new HttpErrors.Forbidden();
     const fromCustomer = await customerModel.getById(debt.fromCustomerId);
-    const fromCustomerCurrentAccount = await accountModel.getCurrentAccount(debt.fromCustomerId);
-    const toCustomerCurrentAccount = await accountModel.getCurrentAccount(debt.toCustomerId);
+    const fromCustomerCurrentAccount = await accountModel.getCurrentAccountByCustomerId(debt.fromCustomerId);
+    const toCustomerCurrentAccount = await accountModel.getCurrentAccountByCustomerId(debt.toCustomerId);
 
     const otp = generateTOTP(customer.otpSecret);
     const createdTransfer = await transferModel.createPayDebtTransfer({
@@ -167,6 +167,7 @@ async function confirmInterbankTransfer(req, res) {
     const customer = await customerModel.getById(customerId);
     if (!verifyTOTP(otp, customer.otpSecret, 10)) throw new HttpErrors.Forbidden();
 
+    const targetBankingApi = linkedBankBankingApiModules[transfer.toBankId];
     if (!targetBankingApi) throw new HttpErrors.InternalServerError();
     const transferCurrency = await currencyModel.getById(transfer.currencyId);
     if (!transferCurrency) throw new HttpErrors.InternalServerError();

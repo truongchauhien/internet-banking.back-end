@@ -4,23 +4,23 @@ import fetch from 'node-fetch';
 import FormData from 'form-data';
 import jwt from 'jsonwebtoken';
 import _ from 'lodash';
-import HttpErrors from './extensions/http-errors.js';
+import HttpErrors from '../extensions/http-errors.js';
 import {
     getByUserName as getCustomerByUserName,
     updateRefreshToken as updateCustomerRefreshToken,
     getById as getCustomerById
-} from '../models/customer-model.js';
+} from '../../models/customer-model.js';
 import {
     getByUserName as getEmployeeByUserName,
     updateRefreshToken as updateEmployeeRefreshToken,
     getById as getEmployeeById
-} from '../models/employee-model.js';
+} from '../../models/employee-model.js';
 import {
     getByUserName as getAdministratorByUserName,
     updateRefreshToken as updateAdministratorRefreshToken,
     getById as getAdministratorById
-} from '../models/administrator-model.js';
-import config from '../configs/configs.js';
+} from '../../models/administrator-model.js';
+import config from '../../configs/configs.js';
 
 const TOKEN_SECRET_KEY = config.get('tokenSecretKey');
 const RECAPTCHA_SECRET_KEY = config.get('recaptchaSecretKey');
