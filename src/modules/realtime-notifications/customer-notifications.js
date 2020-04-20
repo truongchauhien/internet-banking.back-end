@@ -19,7 +19,7 @@ export const setup = async () => {
         durable: false
     });
 
-    setup = true;
+    isSetup = true;
 };
 
 export const notify = ({ customerId, title, message, typeId, statusId = NOTIFICATION_STATUS.UNREAD }) => {
