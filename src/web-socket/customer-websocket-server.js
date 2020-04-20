@@ -74,7 +74,6 @@ export const setup = async () => {
         for (const ws of customer.webSockets) {
             ws.send(json);
         }
-        const customer
     }, {
         noAck: true
     });

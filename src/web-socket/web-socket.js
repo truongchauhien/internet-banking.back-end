@@ -5,7 +5,7 @@ export const integrate = (httpServer) => {
     httpServer.on('upgrade', (request, socket, head) => {
         const pathname = url.parse(request.url).pathname;
 
-        if (pathname === '/customer') {
+        if (pathname === '/websocket/customers') {
             customerWss.handleUpgrade(request, socket, head, ws => {
                 customerWss.emit('connection', ws, request);
             });
