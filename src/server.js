@@ -7,7 +7,7 @@ import logger from './modules/logger/logger.js';
 import errorHandler from './middlewares/error-handling.js';
 import internalRouter from './routes/internal-routes.js';
 import { integrate as integrateWebSocket, setup as setupWebSocket } from './web-socket/web-socket.js';
-import { setup as setupThirdPartyBankingApi } from './modules/third-party-banking-api/third-party-banking-api.js';
+import { setup as setupLinkedBankBankingApiModules } from './modules/linked-banks/banking-api-modules.js';
 import { setup as setupRabbitMQ } from './modules/rabbitmq/rabbitmq.js';
 import { setup as setupCustomerNotificationService } from './modules/realtime-notifications/customer-notifications.js';
 
@@ -28,6 +28,7 @@ const PORT = config.get('port');
     await setupRabbitMQ();
     await setupWebSocket();
     await setupCustomerNotificationService();
+    await setupLinkedBankBankingApiModules();
 
     server.on('request', app);
     integrateWebSocket(server);
