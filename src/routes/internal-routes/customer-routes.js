@@ -9,4 +9,8 @@ router.post('/', selectHandlerByRole({
     employee: asyncWrapper(customerController.createCustomer)
 }));
 
+router.post('/:customerId/password', selectHandlerByRole({
+    customer: asyncWrapper(customerController.createPasswordChangeForCustomer)
+}));
+
 export default router;
