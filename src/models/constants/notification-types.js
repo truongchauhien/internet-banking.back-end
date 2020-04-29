@@ -6,4 +6,12 @@ export const NOTIFICATION_TYPES = {
     DEBT_PAID: 5
 };
 
+export const REVERSE_NOTIFICATION_TYPES = {
+    1: 'GENERIC',
+    2: 'DEBT_CREATED',
+    3: 'DEBT_CANCELED_BY_SENDER',
+    4: 'DEBT_CANCELED_BY_RECEIVER',
+    5: 'DEBT_PAID'
+};
+
 export default NOTIFICATION_TYPES;
