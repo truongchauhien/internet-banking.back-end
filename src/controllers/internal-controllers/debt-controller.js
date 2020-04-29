@@ -10,22 +10,25 @@ import {
 
 export const createDebt = async (req, res) => {
     const { userId: customerId } = req.auth;
-    let { toCustomerId, amount, message } = req.body;
+    let { toCustomerHasAccountNumber, amount: rawAmount, message: rawMessage } = req.body;
 
-    if (customerId === toCustomerId) throw new HttpErrors.BadRequest();
+    const amount = Number.parseInt(rawAmount) || 0;
+    if (amount <= 0) throw new HttpErrors.BadRequest();
+    const message = rawMessage || '';
 
-    const customer = customerModel.getById(customerId);
-    const toCustomer = customerModel.getById(toCustomerId);
+    const toCustomer = await customerModel.getByAccountNumber(toCustomerHasAccountNumber);
     if (!toCustomer) throw new HttpErrors.BadRequest();
+    if (customerId === toCustomer.id) throw new HttpErrors.BadRequest(); // A customer sends debt to himself/herself.
+    const fromCustomer = await customerModel.getById(customerId);
 
     const createdDebt = await debtModel.createDebt({
-        fromCustomerId: customerId,
-        toCustomerId,
+        fromCustomerId: fromCustomer.id,
+        toCustomerId: toCustomer.id,
         amount,
         message
     });
 
-    notifyDebtCreated(toCustomerId, customer.fullName);
+    notifyDebtCreated(toCustomer.id, fromCustomer.fullName, message);
     return res.status(201).json({
         debt: createdDebt
     });
@@ -33,43 +36,48 @@ export const createDebt = async (req, res) => {
 
 export const getDebts = async (req, res) => {
     const { userId: customerId } = req.auth;
-    const { type, fromTime, toTime, newOnly: rawNewOnly, pageNumber: rawPageNumber } = req.query;
+    const { type, newOnly: rawNewOnly, startingAfter: rawStartingAfter } = req.query;
 
     let newOnly = rawNewOnly === 'true';
-    let pageNumber = Number.parseInt(rawPageNumber) || 1;
-    if (pageNumber <= 0) throw new HttpErrors.BadRequest();
+    let startingAfter = Number.parseInt(rawStartingAfter) || null;
 
-    const pageSize = 10;
+    const limit = 1;
 
-    let debts, totalPages;
+    let debts;
     switch (type) {
         case 'sent':
-            [totalPages, debts] = await debtModel.findBySender(customerId, new Date(fromTime), new Date(toTime), newOnly, pageSize, pageNumber);
+            debts = await debtModel.findBySender(customerId, newOnly, limit + 1, startingAfter);
             break;
         case 'received':
-            [totalPages, debts] = await debtModel.findByReceiver(customerId, new Date(fromTime), new Date(toTime), newOnly, pageSize, pageNumber);
+            debts = await debtModel.findByReceiver(customerId, newOnly, limit + 1, startingAfter);
             break;
         case 'both':
-            [totalPages, debts] = await debtModel.findByBothSenderAndReceiver(customerId, new Date(fromTime), new Date(toTime), newOnly, pageSize, pageNumber);
+            debts = await debtModel.findByBothSenderAndReceiver(customerId, newOnly, limit + 1, startingAfter);
             break;
         default:
             throw new HttpErrors.BadRequest();
     }
 
+    let hasMore = false;
+    if (Array.isArray(debts) && debts.length > limit) {
+        debts.pop();
+        hasMore = true;
+    }
+
     return res.status(200).json({
         debts: debts,
-        pageNumber: pageNumber,
-        totalPages: totalPages
+        hasMore: hasMore
     });
 };
 
 export const cancelDebt = async (req, res) => {
     const { userId: customerId } = req.auth;
     const { debtId } = req.params;
-    const { canceledReason } = req.body;
+    const { canceledReason: rawCanceledReason } = req.body;
 
     const debt = await debtModel.getDebtById(debtId);
     if (!debt) throw new HttpErrors.NotFound();
+    let canceledReason = rawCanceledReason || '';
 
     await debtModel.cancelDebt({
         debtId,
@@ -85,5 +93,32 @@ export const cancelDebt = async (req, res) => {
         notifyDebtCanceledByReceiver(sender.id, sender.fullName, canceledReason);
     }
 
-    return res.status(200);
+    return res.status(200).end();
+};
+
+export const getDebt = async (req, res) => {
+    const { userId: customerId } = req.auth;
+    const { identityValue } = req.params;
+    const { identityType: rawIdentityType } = req.query;
+
+    let identityType = rawIdentityType || 'id';
+
+    let debt;
+    switch (identityType) {
+        case 'id':
+            debt = await debtModel.getDebtById(identityValue);
+            break;
+        case 'transferId':
+            debt = await debtModel.getDebtByTransferId(identityValue);
+            break;
+        default:
+            throw new HttpErrors.BadRequest();
+    }
+
+    if (!debt) throw new HttpErrors.NotFound();
+    if (![debt.fromCustomerId, debt.toCustomerId].includes(customerId)) throw new HttpErrors.Forbidden();
+
+    return res.status(200).json({
+        debt: debt
+    });
 };

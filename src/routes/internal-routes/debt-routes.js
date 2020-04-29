@@ -8,6 +8,9 @@ const router = express.Router();
 router.get('/', selectHandlerByRole({
     customer: asyncWrapper(debtController.getDebts)
 }));
+router.get('/:identityValue', selectHandlerByRole({
+    customer: asyncWrapper(debtController.getDebt)
+}));
 router.post('/', selectHandlerByRole({
     customer: asyncWrapper(debtController.createDebt)
 }));
