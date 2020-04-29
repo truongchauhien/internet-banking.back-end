@@ -14,7 +14,7 @@ export const getContacts = async (req, res) => {
 export const createContact = async (req, res) => {
     const { userId: customerId } = req.auth;
     const contact = {
-        ...(_.pick(req.body, ['accountNumber', 'name'])),
+        ...(_.pick(req.body, ['accountNumber', 'name', 'bankId'])),
         customerId: customerId
     };
     const contactId = await contactModel.createContact(contact);
