@@ -25,6 +25,6 @@ export const getAccountInformation = async (req, res, next) => {
 
 export const getLinkedBanks = async (req, res, next) => {
     return res.status(200).json({
-        banks: linkedBanks
+        linkedBanks: linkedBanks
     });
 };
