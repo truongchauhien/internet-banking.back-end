@@ -1,5 +1,4 @@
 import HttpError from '../controllers/extensions/http-error.js';
-import HttpErrors from '../controllers/extensions/http-errors.js';
 import { MySqlError } from '../database/mysql-error.js';
 import ERRORS from '../controllers/extensions/error-meta.js';
 import logger from '../modules/logger/logger.js';
@@ -32,7 +31,7 @@ export const errorHandler = (err, req, res, next) => {
         logger.error(JSON.stringify(err));
         switch (err.code) {
             case 'ER_DUP_ENTRY':
-                return res.status(400).json(ERRORS(1001));
+                return res.status(400).json(ERRORS[1001]);
             default:
                 return res.status(500).end();
         }
