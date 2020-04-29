@@ -1,10 +1,10 @@
 import { pool_query } from '../database/mysql-db.js';
 
-export const createNotification = async ({ customerId, title, message, typeId, statusId }) => {
+export const createNotification = async ({ customerId, title, content, typeId, statusId }) => {
     const notification = {
         customerId,
         title,
-        message,
+        content,
         typeId,
         statusId
     };
