@@ -3,7 +3,7 @@ import HttpErrors from '../extensions/http-errors.js';
 import ERRORS from '../extensions/error-meta.js';
 import generateTOTP from '../../modules/otp/generate-totp.js';
 import verifyTOTP from '../../modules/otp/verify-totp.js';
-import { sendOtpMail } from '../../modules/mail/send-otp-mail.js';
+import { sendOtpMailForTransferCofirmation } from '../../modules/mail/send-otp-mail.js';
 import * as customerModel from '../../models/customer-model.js';
 import * as accountModel from '../../models/account-model.js';
 import * as transferModel from '../../models/transfer-model.js';
@@ -20,10 +20,13 @@ export const createTransfer = async (req, res) => {
     switch (transferType) {
         case 'intrabank':
             await createIntrabankTransfer(req, res);
+            break;
         case 'interbank':
             await createInterbankTransfer(req, res);
+            break;
         case 'paydebt':
             await createPayDebtTransfer(req, res);
+            break;
         default:
             throw new HttpErrors.BadRequest();
     }
@@ -35,10 +38,13 @@ export const confirmTransfer = async (req, res) => {
     switch (transferType) {
         case 'intrabank':
             await confirmIntrabankTransfer(req, res);
+            break;
         case 'interbank':
             await confirmInterbankTransfer(req, res);
+            break;
         case 'paydebt':
             await confirmPayDebtTransfer(req, res);
+            break;
         default:
             throw new HttpErrors.BadRequest();
     }
@@ -76,7 +82,7 @@ async function createIntrabankTransfer(req, res) {
         whoPayFee
     });
 
-    await sendOtpMail({ customerName: customer.fullName, toEmail: customer.email, otp: otp });
+    sendOtpMailForTransferCofirmation({ customerName: customer.fullName, toEmail: customer.email, otp: otp });
 
     return res.status(201).json({
         transfer: _.omit(createdTransfer, ['otp'])
@@ -102,7 +108,8 @@ async function createInterbankTransfer(req, res) {
         otp,
         whoPayFee
     });
-    await sendOtpMail({ customerName: customer.fullName, toEmail: customer.email, otp: generatedOtp });
+    
+    sendOtpMailForTransferCofirmation({ customerName: customer.fullName, toEmail: customer.email, otp: generatedOtp });
 
     return res.status(201).json({
         transfer: _.omit(createdTransfer, ['otp'])
@@ -114,22 +121,25 @@ async function createPayDebtTransfer(req, res) {
     const { debtId } = req.body;
 
     const debt = await debtModel.getDebtById(debtId);
-    if (customerId !== debt.fromCustomerId) throw new HttpErrors.Forbidden();
-    const fromCustomer = await customerModel.getById(debt.fromCustomerId);
-    const fromCustomerCurrentAccount = await accountModel.getCurrentAccountByCustomerId(debt.fromCustomerId);
-    const toCustomerCurrentAccount = await accountModel.getCurrentAccountByCustomerId(debt.toCustomerId);
+    if (!debt) throw new HttpErrors.BadRequest();
+    // Who is paying for the debt is who received the debt.
+    if (customerId !== debt.toCustomerId) throw new HttpErrors.Forbidden();
+    const whoPaysDebt = await customerModel.getById(debt.toCustomerId);
+    const whoCreatedDebtCurrentAccount = await accountModel.getCurrentAccountByCustomerId(debt.fromCustomerId);
+    const whoPaysDebtCurrentAccount = await accountModel.getCurrentAccountByCustomerId(debt.toCustomerId);
 
-    const otp = generateTOTP(customer.otpSecret);
+    const otp = generateTOTP(whoPaysDebt.otpSecret);
     const createdTransfer = await transferModel.createPayDebtTransfer({
-        customerId: debt.fromCustomerId,
-        fromAccountNumber: fromCustomerCurrentAccount.accountNumber,
-        toAccountNumber: toCustomerCurrentAccount.accountNumber,
+        debtId: debt.id,
+        customerId: whoPaysDebt.id,
+        fromAccountNumber: whoPaysDebtCurrentAccount.accountNumber,
+        toAccountNumber: whoCreatedDebtCurrentAccount.accountNumber,
         amount: debt.amount,
         message: debt.message,
         otp: otp
     });
 
-    await sendOtpMail({ customerName: fromCustomer.fullName, toEmail: fromCustomer.email, otp: otp });
+    sendOtpMailForTransferCofirmation({ customerName: whoPaysDebt.fullName, toEmail: whoPaysDebt.email, otp: otp });
 
     return res.status(201).json({
         transfer: _.omit(createdTransfer, ['otp'])
@@ -198,7 +208,7 @@ async function confirmPayDebtTransfer(req, res) {
     if (!transfer) throw new HttpErrors.NotFound();
     if (transfer.typeId !== TRANSFER_TYPES.PAY_DEBT_TRANSFER) throw new HttpErrors.BadRequest();
     if (transfer.customerId !== customerId) throw new HttpErrors.Forbidden();
-    
+
     const customer = await customerModel.getById(customerId);
     if (!verifyTOTP(otp, customer.otpSecret, 10)) throw new HttpErrors.Forbidden(ERRORS.INCORRECT_OTP);
     if (transfer.otp !== otp) throw new HttpErrors.Forbidden(ERRORS.INCORRECT_OTP);
@@ -207,7 +217,7 @@ async function confirmPayDebtTransfer(req, res) {
 
     const debt = await debtModel.getDebtByTransferId(transfer.id);
     notifyDebtPaid(debt.fromCustomerId, customer.fullName, transfer.message);
-    
+
     res.status(200).json({
         message: 'Transfer confirmed.'
     });
