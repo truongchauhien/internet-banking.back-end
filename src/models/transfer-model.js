@@ -81,7 +81,7 @@ export const createInterbankTransfer = ({ customerId, fromAccountNumber, toAccou
     });
 };
 
-export const createPayDebtTransfer = ({ customerId, fromAccountNumber, toAccountNumber, amount, message, otp }) => {
+export const createPayDebtTransfer = ({ debtId, customerId, fromAccountNumber, toAccountNumber, amount, message, otp }) => {
     return doTransaction(async (connection) => {
         let results;
         [results] = await connection.query('SELECT * FROM fees WHERE id = ?', [FEES.INTRA_BANK_TRANSFER]);
@@ -100,9 +100,12 @@ export const createPayDebtTransfer = ({ customerId, fromAccountNumber, toAccount
             typeId: TRANSFER_TYPES.PAY_DEBT_TRANSFER
         };
         [results] = await connection.query('INSERT INTO transfers SET ?', [transfer]);
+        
+        const transferId = results.insertId;
+        await connection.query('UPDATE debts SET transferId = ? WHERE id = ?', [transferId, debtId])
 
         return {
-            id: results.insertId,
+            id: transferId,
             ...transfer
         };
     });
@@ -277,9 +280,9 @@ export const confirmPayDebtTransfer = (transferId) => {
             [toAccount.id, transfer.amount, TRANSACTION_TYPES.PAY_DEBT_RECEIVE]
         ]]);
 
-        [results] = await connection.query('UPDATE transfers SET statusId = ? WHERE id = ?', [TRANSFER_STATUS.COMFIRMED, transferId]);
+        [results] = await connection.query('UPDATE transfers SET statusId = ? WHERE id = ?', [TRANSFER_STATUS.COMFIRMED, transfer.id]);
 
-        [results] = await connection.query('UPDATE debts SET statusId = ? WHERE transferId = ?', [DEBT_STATUS.PAID], transfer.id);
+        [results] = await connection.query('UPDATE debts SET statusId = ? WHERE transferId = ?', [DEBT_STATUS.PAID, transfer.id]);
     });
 };
 
