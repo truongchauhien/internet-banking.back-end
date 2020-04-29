@@ -5,21 +5,12 @@ import FormData from 'form-data';
 import jwt from 'jsonwebtoken';
 import _ from 'lodash';
 import HttpErrors from '../extensions/http-errors.js';
-import {
-    getByUserName as getCustomerByUserName,
-    updateRefreshToken as updateCustomerRefreshToken,
-    getById as getCustomerById
-} from '../../models/customer-model.js';
-import {
-    getByUserName as getEmployeeByUserName,
-    updateRefreshToken as updateEmployeeRefreshToken,
-    getById as getEmployeeById
-} from '../../models/employee-model.js';
-import {
-    getByUserName as getAdministratorByUserName,
-    updateRefreshToken as updateAdministratorRefreshToken,
-    getById as getAdministratorById
-} from '../../models/administrator-model.js';
+import * as customerModel from '../../models/customer-model.js';
+import * as employeeModel from '../../models/employee-model.js';
+import * as administratorModel from '../../models/administrator-model.js';
+import { sendOtpMailForPasswordResetConfirmationMail } from '../../modules/mail/send-otp-mail.js';
+import generateTOTP from '../../modules/otp/generate-totp.js';
+import verifyTOTP from '../../modules/otp/verify-totp.js';
 import config from '../../configs/configs.js';
 
 const TOKEN_SECRET_KEY = config.get('tokenSecretKey');
@@ -55,14 +46,7 @@ const generateRefreshToken = () => {
     });
 };
 
-/**
- * 
- * @param {Request} req
- * @param {Response} res
- */
-export const userLogin = async (req, res, next) => {
-    const { userType, userName, password, captchaToken } = req.body;
-
+const verifyRecaptcha = async (captchaToken) => {
     const recaptchaData = new FormData();
     recaptchaData.append('secret', RECAPTCHA_SECRET_KEY);
     recaptchaData.append('response', captchaToken);
@@ -78,21 +62,30 @@ export const userLogin = async (req, res, next) => {
     }
 
     const recaptchaResponseJsonObject = await recaptchaResponse.json();
-    if (!recaptchaResponseJsonObject.success) {
-        // Google reCAPTCHA challenge was not complete.
-        throw new HttpErrors.BadRequest();
-    }
+    return recaptchaResponseJsonObject.success;
+};
+
+/**
+ * 
+ * @param {Request} req
+ * @param {Response} res
+ */
+export const userLogin = async (req, res, next) => {
+    const { userType = 'customer' } = req.query;
+    const { userName, password, captchaToken } = req.body;
+
+    if (!await verifyRecaptcha(captchaToken)) throw new HttpErrors.BadRequest();
 
     let user = null;
     switch (userType) {
         case 'customer':
-            user = await getCustomerByUserName(userName);
+            user = await customerModel.getByUserName(userName);
             break;
         case 'employee':
-            user = await getEmployeeByUserName(userName);
+            user = await employeeModel.getByUserName(userName);
             break;
         case 'administrator':
-            user = await getAdministratorByUserName(userName);
+            user = await administratorModel.getByUserName(userName);
             break;
         default:
             // User type is not provided.
@@ -110,11 +103,17 @@ export const userLogin = async (req, res, next) => {
     const refreshToken = await generateRefreshToken();
 
     if (userType === 'customer') {
-        await updateCustomerRefreshToken(user.id, refreshToken);
+        await customerModel.update(user.id, {
+            refreshToken
+        });
     } else if (userType === 'employee') {
-        await updateEmployeeRefreshToken(user.id)
+        await employeeModel.update(user.id, {
+            refreshToken
+        });
     } else if (userType === 'administrator') {
-        await updateAdministratorRefreshToken(user.id, refreshToken);
+        await administratorModel.update(user.id, {
+            refreshToken
+        });
     }
 
     const accessToken = await generateAccessToken({
@@ -137,18 +136,19 @@ export const userLogin = async (req, res, next) => {
  * @param {Response} res
  */
 export const userRenewToken = async (req, res) => {
-    const { userType, userId, refreshToken } = req.body;
+    const { userType = 'customer' } = req.query;
+    const { userId, refreshToken } = req.body;
 
     let user = null;
     switch (userType) {
         case 'customer':
-            user = await getCustomerById(userId);
+            user = await customerModel.getById(userId);
             break;
         case 'employee':
-            user = await getEmployeeById(userId);
+            user = await employeeModel.getById(userId);
             break;
         case 'administrator':
-            user = await getAdministratorById(userId);
+            user = await administratorModel.getById(userId);
             break;
         default:
             throw new HttpErrors.BadRequest();
@@ -170,13 +170,19 @@ export const userRenewToken = async (req, res) => {
 
     switch (userType) {
         case 'customer':
-            await updateCustomerRefreshToken(userId, newRefreshToken);
+            await customerModel.update(userId, {
+                refreshToken: newRefreshToken
+            });
             break;
         case 'employee':
-            await updateEmployeeRefreshToken(userId, refreshToken);
+            await employeeModel.update(userId, {
+                refreshToken: newRefreshToken
+            });
             break;
         case 'administrator':
-            await updateAdministratorRefreshToken(userId, refreshToken);
+            await administratorModel.update(userId, {
+                refreshToken: newRefreshToken
+            });
             break;
     }
 
@@ -186,4 +192,65 @@ export const userRenewToken = async (req, res) => {
         refreshToken: newRefreshToken,
         accessToken: newAccessToken
     });
+};
+
+export const createResetPasswordRequest = async (req, res) => {
+    const { userType = 'customer' } = req.query;
+
+    switch (userType) {
+        case 'customer':
+            return createPasswordResetForCustomer(req, res);
+        case 'employee':
+            throw new HttpErrors.BadRequest();
+        case 'administrator':
+            throw new HttpErrors.BadRequest();
+        default:
+            throw new HttpErrors.BadRequest();
+    }
+};
+
+async function createPasswordResetForCustomer(req, res) {
+    const { email } = req.body;
+
+    const customer = await customerModel.getByEmail(email);
+    if (!customer) throw new HttpErrors.NotFound();
+
+    const otp = generateTOTP(customer.otpSecret);
+    sendOtpMailForPasswordResetConfirmationMail({
+        customerName: customer.fullName,
+        toEmail: customer.email,
+        otp
+    });
+
+    return res.status(200).end();
+};
+
+export const confirmPasswordReset = async (req, res) => {
+    const { userType = 'customer' } = req.query;
+
+    switch (userType) {
+        case 'customer':
+            return confirmPasswordResetForCustomer(req, res);
+        case 'employee':
+            throw new HttpErrors.BadRequest();
+        case 'administrator':
+            throw new HttpErrors.BadRequest();
+        default:
+            throw new HttpErrors.BadRequest();
+    }
+};
+
+async function confirmPasswordResetForCustomer(req, res) {
+    const { email, otp, newPassword } = req.body;
+
+    const customer = await customerModel.getByEmail(email);
+    if (!customer) throw new HttpErrors.NotFound();
+    if (!verifyTOTP(otp, customer.otpSecret, 10)) throw new HttpErrors.Forbidden();
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    await customerModel.update(customer.id, {
+        password: hashedPassword
+    });
+
+    return res.status(200).end();
 };
