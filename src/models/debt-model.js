@@ -1,4 +1,4 @@
-import { pool_query, doTransaction, doQuery } from '../database/mysql-db.js';
+import { pool_query, doTransaction, doQuery, pool } from '../database/mysql-db.js';
 import mysql from 'mysql';
 import CURRENCIES from './constants/currencies.js';
 import DEBT_STATUS from './constants/debt-status.js';
@@ -24,7 +24,7 @@ export const createDebt = async ({ fromCustomerId, toCustomerId, message, amount
 export const cancelDebt = ({ debtId, changerId, canceledReason }) => {
     return doTransaction(async (connection) => {
         let results;
-        [results] = connection.query('SELECT * FROM debts WHERE id = ?', [debtId]);
+        [results] = await connection.query('SELECT * FROM debts WHERE id = ?', [debtId]);
         if (!Array.isArray(results) || results.length === 0) throw new TransactionCanceled();
         const debt = results[0];
 
@@ -46,24 +46,10 @@ export const cancelDebt = ({ debtId, changerId, canceledReason }) => {
     });
 };
 
-function createFinder(customerIdFieldName) {
-    return (customerId, fromTime, toTime, newOnly, pageSize, pageNumber) => {
+function createFinder(fieldNameContainsCustomerId) {
+    return (customerId, newOnly, limit, startingAfter) => {
         return doQuery(async (connection) => {
             let results;
-            [results] = await connection.query(
-                'SELECT COUNT(id) as totalRecords ' +
-                'FROM debts ' +
-                `WHERE createdAt >= ${mysql.escape(fromTime)} AND createdAt <= ${mysql.escape(toTime)} ` +
-                `${customerIdFieldName !== null ?
-                    `AND ${mysql.escapeId(customerIdFieldName)} = ${mysql.escape(customerId)}` :
-                    `AND ( ${mysql.escapeId('fromCustomerId')} = ${mysql.escape(customerId)} OR ${mysql.escapeId('toCustomerId')} = ${mysql.escape(customerId)} )`} ` +
-                `${newOnly ? `AND statusId = ${mysql.escape(DEBT_STATUS.NEW)} ` : ''} ` +
-                'ORDER BY createdAt'
-            );
-
-            const totalRecords = results[0].totalRecords;
-            const totalPages = Math.ceil(totalRecords / pageSize);
-            const offset = (pageNumber - 1) * pageSize;
             [results] = await connection.query(
                 'SELECT debts.id, debts.fromCustomerId, debts.toCustomerId, debts.message, debts.canceledReason, debts.amount, debts.statusId, debts.transferId, debts.createdAt, ' +
                 '       c1.fullName AS fromCustomerFullName, c2.fullName AS toCustomerFullName, ' +
@@ -72,38 +58,50 @@ function createFinder(customerIdFieldName) {
                 'INNER JOIN customers c1 ON debts.fromCustomerId = c1.id ' +
                 'INNER JOIN customers c2 ON debts.toCustomerId = c2.id ' +
                 'INNER JOIN debt_status ON debts.statusId = debt_status.id ' +
-                `WHERE createdAt >= ${mysql.escape(fromTime)} AND createdAt <= ${mysql.escape(toTime)} ` +
-                `${customerIdFieldName !== null ?
-                    `AND ${mysql.escapeId(customerIdFieldName)} = ${mysql.escape(customerId)}` :
+                `WHERE 1 = 1 ` +
+                `${startingAfter !== null ? `AND debts.id < ${mysql.escape(startingAfter)}` : ''} ` +
+                `${fieldNameContainsCustomerId !== null ?
+                    `AND ${mysql.escapeId(fieldNameContainsCustomerId)} = ${mysql.escape(customerId)}` :
                     `AND ( ${mysql.escapeId('fromCustomerId')} = ${mysql.escape(customerId)} OR ${mysql.escapeId('toCustomerId')} = ${mysql.escape(customerId)} )`} ` +
                 `${newOnly ? `AND statusId = ${mysql.escape(DEBT_STATUS.NEW)} ` : ''} ` +
-                'ORDER BY createdAt ' +
-                'LIMIT ? OFFSET ?',
-                [pageSize, offset]
+                'ORDER BY debts.id DESC ' +
+                'LIMIT ?',
+                [limit]
             );
 
-            return [totalPages, results];
+            return results;
         });
     }
 }
 
-export const findBySender = (customerId, fromTime, toTime, newOnly, pageSize, pageNumber) => {
-    return createFinder('fromCustomerId')(customerId, fromTime, toTime, newOnly, pageSize, pageNumber);
+export const findBySender = (customerId, newOnly, limit, startingAfter) => {
+    return createFinder('fromCustomerId')(customerId, newOnly, limit, startingAfter);
 };
 
-export const findByReceiver = (customerId, fromTime, toTime, newOnly, pageSize, pageNumber) => {
-    return createFinder('toCustomerId')(customerId, fromTime, toTime, newOnly, pageSize, pageNumber);
+export const findByReceiver = (customerId, newOnly, limit, startingAfter) => {
+    return createFinder('toCustomerId')(customerId, newOnly, limit, startingAfter);
 };
 
-export const findByBothSenderAndReceiver = (customerId, fromTime, toTime, newOnly, pageSize, pageNumber) => {
-    return createFinder(null)(customerId, fromTime, toTime, newOnly, pageSize, pageNumber)
+export const findByBothSenderAndReceiver = (customerId, newOnly, limit, startingAfter) => {
+    return createFinder(null)(customerId, newOnly, limit, startingAfter);
 };
 
-export const getDebtById = async (debtId) => {
-    const [results] = await pool_query('SELECT * FROM debts WHERE id = ?', [debtId]);
+const createGetter = (identityType) => async (identityValue) => {
+    const [results] = await pool_query(
+        'SELECT debts.id, debts.fromCustomerId, debts.toCustomerId, debts.message, debts.canceledReason, debts.amount, debts.statusId, debts.transferId, debts.createdAt, ' +
+        '       c1.fullName AS fromCustomerFullName, c2.fullName AS toCustomerFullName, ' +
+        '       debt_status.status ' +
+        'FROM debts ' +
+        'INNER JOIN customers c1 ON debts.fromCustomerId = c1.id ' +
+        'INNER JOIN customers c2 ON debts.toCustomerId = c2.id ' +
+        'INNER JOIN debt_status ON debts.statusId = debt_status.id ' +
+        'WHERE debts.?? = ?',
+        [identityType, identityValue]
+    );
     if (Array.isArray(results) && results.length > 0) {
         return results[0];
     }
+
     return null;
 };
 
@@ -117,4 +115,4 @@ export const getDebtByTransferId = async (transferId) => {
 
 export const getDebt = (identityType, identityValue) => {
     return createGetter(identityType)(identityValue);
-    }
+}
