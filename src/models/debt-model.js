@@ -107,10 +107,14 @@ export const getDebtById = async (debtId) => {
     return null;
 };
 
-export const getDebtByTransferId = async (transferId) => {
-    const [results] = await pool_query('SELECT * FROM debts WHERE transferId = ?', [transferId]);
-    if (Array.isArray(results) && results.length > 0) {
-        return results[0];
-    }
-    return null;
+export const getDebtById = (debtId) => {
+    return createGetter('id')(debtId);
 };
+
+export const getDebtByTransferId = async (transferId) => {
+    return createGetter('transferId')(transferId);
+};
+
+export const getDebt = (identityType, identityValue) => {
+    return createGetter(identityType)(identityValue);
+    }
