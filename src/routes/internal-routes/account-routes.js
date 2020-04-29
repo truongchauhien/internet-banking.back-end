@@ -6,10 +6,11 @@ import * as accountController from '../../controllers/internal-controllers/accou
 const router = express.Router();
 
 router.get('/', selectHandlerByRole({
-    customer: asyncWrapper(accountController.getAccounts)
+    customer: asyncWrapper(accountController.getAccountsForCustomer),
+    employee: asyncWrapper(accountController.getAccountsForEmployee)
 }));
 router.get('/:identityValue', selectHandlerByRole({
-    customer: asyncWrapper(accountController.getAccount)
+    customer: asyncWrapper(accountController.getAccountForCustomer)
 }));
 
 export default router;
