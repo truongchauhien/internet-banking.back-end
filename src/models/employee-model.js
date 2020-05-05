@@ -1,4 +1,10 @@
 import { pool_query } from '../database/mysql-db.js';
+import mysql from 'mysql';
+
+export const getAll = async (fields = ['id', 'userName', 'fullName', 'email']) => {
+    const [results] = await pool_query('SELECT ?? FROM employees ORDER BY id DESC', [fields]);
+    return results;
+};
 
 export const getByUserName = async userName => {
     const [results, fields] = await pool_query('SELECT * FROM employees WHERE userName = ?', [userName]);
@@ -25,11 +31,19 @@ export const getById = async id => {
     }
 
     return null;
+
+export const createEmployee = async (employee) => {
+    let results;
+    [results] = await pool_query('INSERT INTO employees SET ?', [employee]);
+    const employeeId = results.insertId;
+    [results] = await pool_query('SELECT * FROM employees WHERE id = ?', [employeeId]);
+    return results[0];
+};
+
 export const update = (id, changes) => {
     return pool_query('UPDATE employees SET ? WHERE id = ?', [changes, id]);
 };
 
-export const updateRefreshToken = (id, refreshToken) => {
-    const [results, fields] = pool_query('UPDATE employees SET refreshToken = ? WHERE id = ?', [refreshToken, id]);
-    return results.affectedRows;
+export const remove = (id) => {
+    return pool_query('DELETE FROM employees WHERE id = ?', [id]);
 };
