@@ -27,7 +27,6 @@ export const getById = async id => {
     return null;
 }
 
-export const updateRefreshToken = (id, refreshToken) => {
-    const [results, fields] = pool_query('UPDATE administrators SET refreshToken = ? WHERE id = ?', [refreshToken, id]);
-    return results.affectedRows;
+export const update = (id, changes) => {
+    return pool_query('UPDATE administrators SET ? WHERE id = ?', [changes, id]);
 };

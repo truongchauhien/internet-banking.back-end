@@ -25,7 +25,9 @@ export const getById = async id => {
     }
 
     return null;
-}
+export const update = (id, changes) => {
+    return pool_query('UPDATE employees SET ? WHERE id = ?', [changes, id]);
+};
 
 export const updateRefreshToken = (id, refreshToken) => {
     const [results, fields] = pool_query('UPDATE employees SET refreshToken = ? WHERE id = ?', [refreshToken, id]);

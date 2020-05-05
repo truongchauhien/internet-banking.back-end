@@ -70,3 +70,7 @@ export const createCustomer = (customer) => {
         return accountNumber;
     });
 };
+
+export const update = (id, changes) => {
+    return pool_query('UPDATE customers SET ? WHERE id = ?', [changes, id]);
+};
