@@ -8,7 +8,7 @@ export const getAll = async (fields = ['id', 'userName', 'fullName', 'email']) =
 
 export const getByUserName = async userName => {
     const [results, fields] = await pool_query('SELECT * FROM employees WHERE userName = ?', [userName]);
-    if (results) {
+    if (Array.isArray(results) && results.length > 0) {
         return results[0];
     }
 
@@ -17,7 +17,7 @@ export const getByUserName = async userName => {
 
 export const getByEmail = async email => {
     const [results, fields] = await pool_query('SELECT * FROM employees WHERE email = ?', [email]);
-    if (results) {
+    if (Array.isArray(results) && results.length > 0) {
         return results[0];
     }
 
@@ -26,11 +26,12 @@ export const getByEmail = async email => {
 
 export const getById = async id => {
     const [results] = await pool_query('SELECT * FROM employees WHERE id = ?', [id]);
-    if (results) {
+    if (Array.isArray(results) && results.length > 0) {
         return results[0];
     }
 
     return null;
+};
 
 export const createEmployee = async (employee) => {
     let results;
