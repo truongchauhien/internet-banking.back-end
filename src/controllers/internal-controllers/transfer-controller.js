@@ -11,7 +11,6 @@ import * as debtModel from '../../models/debt-model.js';
 import * as currencyModel from '../../models/currency-model.js';
 import TRANSFER_TYPES from '../../models/constants/transfer-types.js';
 import linkedBankBankingApiModules from '../../modules/linked-banks/banking-api-modules.js';
-import logger from '../../modules/logger/logger.js';
 import { notifyDebtPaid } from '../../modules/realtime-notifications/customer-notifications.js';
 
 export const createTransfer = async (req, res) => {
