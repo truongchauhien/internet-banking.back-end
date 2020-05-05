@@ -11,6 +11,7 @@ import debtRouter from './internal-routes/debt-routes.js';
 import transactionRouter from './internal-routes/transaction-routes.js';
 import notificationRouter from './internal-routes/notification-routes.js';
 import depositRouter from './internal-routes/deposit-routes.js';
+import employeeRouter from './internal-routes/employee-routes.js';
 
 const router = express.Router();
 router.use('/auth', authRouter);
@@ -24,5 +25,6 @@ router.use('/debts', debtRouter);
 router.use('/transactions', transactionRouter);
 router.use('/notifications', notificationRouter);
 router.use('/deposits', depositRouter);
+router.use('/employees', employeeRouter);
 
 export default router;
