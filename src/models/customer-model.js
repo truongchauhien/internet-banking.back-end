@@ -1,4 +1,5 @@
 import { pool_query, doTransaction, doQuery } from '../database/mysql-db.js';
+import CURRENCIES from './constants/currencies.js';
 
 export const getByUserName = async userName => {
     const [results, fields] = await pool_query('SELECT * FROM customers WHERE userName = ?', [userName]);
@@ -20,10 +21,9 @@ export const getByEmail = async email => {
 
 export const getById = async id => {
     const [results] = await pool_query('SELECT * FROM customers WHERE id = ?', [id]);
-    if (results) {
+    if (Array.isArray(results) && results.length > 0) {
         return results[0];
     }
-
     return null;
 };
 
@@ -40,11 +40,6 @@ export const getByAccountNumber = async accountNumber => {
     return null;
 };
 
-export const updateRefreshToken = async (id, refreshToken) => {
-    const [results, fields] = await pool_query('UPDATE customers SET refreshToken = ? WHERE id = ?', [refreshToken, id]);
-    return results.affectedRows;
-};
-
 export const createCustomer = (customer) => {
     return doTransaction(async (connection) => {
         let results;
@@ -52,22 +47,34 @@ export const createCustomer = (customer) => {
         // Create customer login.
         [results] = await connection.query('INSERT INTO customers SET ?', customer);
         const customerId = results.insertId;
+        // ================================
 
         // Create "current account".
         [results] = await connection.query('SELECT * FROM configurations WHERE name = ?', ['nextAccountNumber']);
         const nextAccountNumber = Number(results[0]['value']);
 
         const accountNumber = '1' + nextAccountNumber.toString().padStart(9, '0');
-        [results] = await connection.query('INSERT INTO accounts SET ?', {
+        const currentAccount = {
             accountNumber: accountNumber,
             customerId: customerId,
             balance: 0,
+            currencyId: CURRENCIES.vnd,
             accountType: 'CURRENT'
-        });
+        };
+        [results] = await connection.query('INSERT INTO accounts SET ?', currentAccount);
+        // ================================
 
         [results] = await connection.query('UPDATE configurations SET value = ? WHERE name = ?', [nextAccountNumber + 1, 'nextAccountNumber']);
+        const currentAccountId = results.insertId;
 
-        return accountNumber;
+        return {
+            id: customerId,
+            ...customer,
+            currentAccount: {
+                id: currentAccountId,
+                ...currentAccount
+            }
+        };
     });
 };
 
