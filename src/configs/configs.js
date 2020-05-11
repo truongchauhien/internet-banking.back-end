@@ -75,7 +75,7 @@ const configs = convict({
 });
 
 const env = configs.get('env');
-configs.loadFile(`./config.${env}.json`);
+configs.loadFile(`./configs.${env}.json`);
 configs.validate({ allowed: 'strict' });
 
 export default configs;
