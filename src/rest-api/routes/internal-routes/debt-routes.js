@@ -1,7 +1,7 @@
 import express from 'express';
 import asyncWrapper from '../../middlewares/async-wrapper.js';
-import * as debtController from '../../controllers/internal-controllers/debt-controller.js';
 import selectHandlerByRole from '../../middlewares/select-handler-by-role.js';
+import * as debtController from '../../controllers/internal-controllers/debt-controller.js';
 
 const router = express.Router();
 

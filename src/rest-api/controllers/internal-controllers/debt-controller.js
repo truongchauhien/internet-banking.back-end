@@ -1,12 +1,12 @@
 import _ from 'lodash';
 import HttpErrors from '../extensions/http-errors.js';
-import * as debtModel from '../../models/debt-model.js';
-import * as customerModel from '../../models/customer-model.js';
+import * as debtModel from '../../../models/debt-model.js';
+import * as customerModel from '../../../models/customer-model.js';
 import {
     notifyDebtCreated,
     notifyDebtCanceledBySender,
     notifyDebtCanceledByReceiver
-} from '../../modules/realtime-notifications/customer-notifications.js';
+} from '../../../modules/realtime-notifications/customer-notifications.js';
 
 export const createDebt = async (req, res) => {
     const { userId: customerId } = req.auth;

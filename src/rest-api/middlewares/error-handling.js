@@ -1,8 +1,8 @@
 import HttpError from '../controllers/extensions/http-error.js';
-import { MySqlError } from '../database/mysql-error.js';
+import MySqlError from '../../modules/database/mysql-error.js';
 import ERRORS from '../controllers/extensions/error-meta.js';
-import logger from '../modules/logger/logger.js';
-import TransactionCanceled from '../models/extensions/transaction-canceled.js';
+import logger from '../../modules/logger/logger.js';
+import TransactionCanceled from '../../models/extensions/transaction-canceled.js';
 
 /**
  * Error Handler Middleware.  

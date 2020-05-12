@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import _ from 'lodash';
-import * as employeeModel from '../../models/employee-model.js';
+import * as employeeModel from '../../../models/employee-model.js';
 import HttpErrors from '../extensions/http-errors.js';
 
 export const getEmployees = async (req, res) => {

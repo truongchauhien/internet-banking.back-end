@@ -31,13 +31,13 @@ export const setup = async () => {
 async function importBankingApiModules() {
     const modules = [];
 
-    const pathToApiDirectory = path.join(dirname(fileURLToPath(import.meta.url)), './by-bank-id/');
+    const pathToApiDirectory = path.resolve(dirname(fileURLToPath(import.meta.url)), '../../../banking-api-modules');
     const dirNames = readdirSync(pathToApiDirectory, { withFileTypes: true })
         .filter(dir => dir.isDirectory())
         .map(dir => dir.name);
 
     for (const dirName of dirNames) {
-        const bankingApiModule = await import(`./by-bank-id/${dirName}/index.js`);
+        const bankingApiModule = await import(`../../../banking-api-modules/${dirName}/index.js`);
         modules.push(bankingApiModule);
     }
 

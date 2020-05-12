@@ -9,7 +9,7 @@ router.get('/', selectHandlerByRole({
     customer: asyncWrapper(accountController.getAccountsForCustomer),
     employee: asyncWrapper(accountController.getAccountsForEmployee)
 }));
-router.get('/:identityValue', selectHandlerByRole({
+router.get('/:identity', selectHandlerByRole({
     customer: asyncWrapper(accountController.getAccountForCustomer)
 }));
 

@@ -1,4 +1,4 @@
-import { pool_query } from '../database/mysql-db.js';
+import { pool_query } from '../modules/database/mysql-db.js';
 import mysql from 'mysql';
 
 export const getAll = async (fields = ['id', 'userName', 'fullName', 'email']) => {

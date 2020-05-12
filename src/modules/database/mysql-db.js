@@ -1,7 +1,7 @@
 import mysql from 'mysql';
 import config from '../configs/configs.js';
 import { MySqlError } from './mysql-error.js';
-import logger from '../modules/logger/logger.js';
+import logger from '../logger/logger.js';
 
 export const pool = mysql.createPool({
     connectionLimit: 255,

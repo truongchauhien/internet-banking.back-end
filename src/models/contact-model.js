@@ -1,4 +1,4 @@
-import { pool_query } from '../database/mysql-db.js';
+import { pool_query } from '../modules/database/mysql-db.js';
 
 export const findAllContacts = async customerId => {
     const [results, fields] = await pool_query('SELECT * FROM contacts WHERE customerId = ?', [customerId]);

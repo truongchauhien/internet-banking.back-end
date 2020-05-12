@@ -1,9 +1,9 @@
 import jwt from 'jsonwebtoken';
 import _ from 'lodash';
-import config from '../configs/configs.js';
+import configs from '../../modules/configs/configs.js';
 import HttpErrors from '../controllers/extensions/http-errors.js';
 
-const TOKEN_SECRET_KEY = config.get('tokenSecretKey');
+const TOKEN_SECRET_KEY = configs.get('tokenSecretKey');
 
 /**
  * 

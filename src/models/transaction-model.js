@@ -1,5 +1,5 @@
 import mysql from 'mysql';
-import { doQuery } from '../database/mysql-db.js';
+import { doQuery } from '../modules/database/mysql-db.js';
 
 export const findByAccountId = (accountId, limit, startingAfter) => {
     return doQuery(async (connection) => {

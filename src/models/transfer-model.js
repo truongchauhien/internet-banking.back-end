@@ -1,4 +1,4 @@
-import { pool_query, doTransaction } from '../database/mysql-db.js';
+import { pool_query, doTransaction } from '../modules/database/mysql-db.js';
 import TRANSFER_STATUS from './constants/transfer-status.js';
 import TRANSACTION_TYPES from './constants/transaction-types.js';
 import FEES from './constants/fees.js';

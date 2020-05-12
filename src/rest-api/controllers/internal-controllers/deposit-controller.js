@@ -1,7 +1,7 @@
 import HttpErrors from '../extensions/http-errors.js';
-import * as depositModel from '../../models/deposit-model.js';
-import * as accountModel from '../../models/account-model.js';
-import * as customerModel from '../../models/customer-model.js';
+import * as depositModel from '../../../models/deposit-model.js';
+import * as accountModel from '../../../models/account-model.js';
+import * as customerModel from '../../../models/customer-model.js';
 
 export const createDeposit = async (req, res) => {
     const { userName, accountNumber, amount } = req.body;

@@ -1,17 +1,17 @@
 import _ from 'lodash';
 import HttpErrors from '../extensions/http-errors.js';
 import ERRORS from '../extensions/error-meta.js';
-import generateTOTP from '../../modules/otp/generate-totp.js';
-import verifyTOTP from '../../modules/otp/verify-totp.js';
-import { sendOtpMailForTransferCofirmation } from '../../modules/mail/send-otp-mail.js';
-import * as customerModel from '../../models/customer-model.js';
-import * as accountModel from '../../models/account-model.js';
-import * as transferModel from '../../models/transfer-model.js';
-import * as debtModel from '../../models/debt-model.js';
-import * as currencyModel from '../../models/currency-model.js';
-import TRANSFER_TYPES from '../../models/constants/transfer-types.js';
-import linkedBankBankingApiModules from '../../modules/linked-banks/banking-api-modules.js';
-import { notifyDebtPaid } from '../../modules/realtime-notifications/customer-notifications.js';
+import * as customerModel from '../../../models/customer-model.js';
+import * as accountModel from '../../../models/account-model.js';
+import * as transferModel from '../../../models/transfer-model.js';
+import * as debtModel from '../../../models/debt-model.js';
+import * as currencyModel from '../../../models/currency-model.js';
+import TRANSFER_TYPES from '../../../models/constants/transfer-types.js';
+import generateTOTP from '../../../modules/otp/generate-totp.js';
+import verifyTOTP from '../../../modules/otp/verify-totp.js';
+import { sendOtpMailForTransferCofirmation } from '../../../modules/mail/send-otp-mail.js';
+import { notifyDebtPaid } from '../../../modules/realtime-notifications/customer-notifications.js';
+import bankingApiModules from '../../../modules/banking-api-modules/banking-api-modules.js';
 
 export const createTransfer = async (req, res) => {
     const { type: transferType } = req.query;
@@ -176,7 +176,7 @@ async function confirmInterbankTransfer(req, res) {
     const customer = await customerModel.getById(customerId);
     if (!verifyTOTP(otp, customer.otpSecret, 10)) throw new HttpErrors.Forbidden();
 
-    const targetBankingApi = linkedBankBankingApiModules[transfer.toBankId];
+    const targetBankingApi = bankingApiModules[transfer.toBankId];
     if (!targetBankingApi) throw new HttpErrors.InternalServerError();
     const transferCurrency = await currencyModel.getById(transfer.currencyId);
     if (!transferCurrency) throw new HttpErrors.InternalServerError();

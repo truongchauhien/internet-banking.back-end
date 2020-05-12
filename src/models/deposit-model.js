@@ -1,4 +1,4 @@
-import { doTransaction } from '../database/mysql-db.js';
+import { doTransaction } from '../modules/database/mysql-db.js';
 import CURRENCIES from './constants/currencies.js';
 import TRANSACTION_TYPES from './constants/transaction-types.js';
 

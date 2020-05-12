@@ -1,4 +1,4 @@
-import { pool_query } from '../database/mysql-db.js';
+import { pool_query } from '../modules/database/mysql-db.js';
 
 export const getCurrentAccountByCustomerId = async (customerId) => {
     const [results] = await pool_query('SELECT * FROM accounts WHERE customerId = ? AND accountType = ?', [customerId, 'CURRENT']);

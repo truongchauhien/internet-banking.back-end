@@ -1,5 +1,5 @@
 import amqp from 'amqplib';
-import configs from '../../configs/configs.js';
+import configs from '../configs/configs.js';
 import logger from '../logger/logger.js';
 
 /**

@@ -1,4 +1,4 @@
-import { pool_query, doTransaction, doQuery } from '../database/mysql-db.js';
+import { pool_query, doTransaction, doQuery } from '../modules/database/mysql-db.js';
 import CURRENCIES from './constants/currencies.js';
 
 export const getByUserName = async userName => {

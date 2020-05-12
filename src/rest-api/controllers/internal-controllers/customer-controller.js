@@ -1,8 +1,8 @@
 import bcrypt from 'bcrypt';
 import _ from 'lodash';
 import HttpErrors from '../extensions/http-errors.js';
-import generateSecret from '../../modules/otp/generate-secret.js';
-import * as customerModel from '../../models/customer-model.js';
+import generateSecret from '../../../modules/otp/generate-secret.js';
+import * as customerModel from '../../../models/customer-model.js';
 
 export const createCustomer = async (req, res) => {
     const customer = _.pick(req.body, ['userName', 'password', 'fullName', 'email', 'phone']);

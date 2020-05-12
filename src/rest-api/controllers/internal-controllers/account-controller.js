@@ -1,6 +1,6 @@
-import * as accountModel from '../../models/account-model.js';
+import * as accountModel from '../../../models/account-model.js';
 import HttpErrors from '../extensions/http-errors.js';
-import bankingApiModules from '../../modules/banking-api-modules/banking-api-modules.js';
+import bankingApiModules from '../../../modules/banking-api-modules/banking-api-modules.js';
 
 export const getAccountsForCustomer = async (req, res) => {
     const { userId } = req.auth;

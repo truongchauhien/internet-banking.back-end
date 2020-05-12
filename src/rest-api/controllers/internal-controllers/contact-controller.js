@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import * as contactModel from '../../models/contact-model.js';
+import * as contactModel from '../../../models/contact-model.js';
 import HttpErrors from '../extensions/http-errors.js';
 
 export const getContacts = async (req, res) => {

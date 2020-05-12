@@ -1,27 +1,11 @@
 import http from 'http';
-import express from 'express';
-import morgan from 'morgan';
-import cors from 'cors';
-import config from './configs/configs.js';
+import config from './modules/configs/configs.js';
 import logger from './modules/logger/logger.js';
-import errorHandler from './middlewares/error-handling.js';
-import internalRouter from './routes/internal-routes.js';
-import publicRouter from './routes/public-routes.js';
+import restApi from './rest-api/index.js';
 import { integrate as integrateWebSocket, setup as setupWebSocket } from './websocket/integration.js';
-import { setup as setupLinkedBankBankingApiModules } from './modules/linked-banks/banking-api-modules.js';
+import { setup as setupBankingApiModules } from './modules/banking-api-modules/banking-api-modules.js';
 import { setup as setupRabbitMQ } from './modules/rabbitmq/rabbitmq.js';
 import { setup as setupCustomerNotificationService } from './modules/realtime-notifications/customer-notifications.js';
-
-const app = express();
-app.use(express.json());
-app.use(express.query());
-if (config.get('env') === 'development') {
-    app.use(morgan('dev'));
-    app.use(cors());
-}
-app.use('/api', internalRouter);
-app.use('/public/v1', publicRouter);
-app.use(errorHandler);
 
 const server = http.createServer();
 const PORT = config.get('port');
@@ -29,9 +13,9 @@ const PORT = config.get('port');
     await setupRabbitMQ();
     await setupWebSocket();
     await setupCustomerNotificationService();
-    await setupLinkedBankBankingApiModules();
+    await setupBankingApiModules();
 
-    server.on('request', app);
+    server.on('request', restApi);
     integrateWebSocket(server);
     server.listen(PORT, () => {
         logger.info(`App listening on port ${PORT}.`);

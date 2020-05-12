@@ -1,6 +1,6 @@
 import WebSocket from 'ws';
 import jwt from 'jsonwebtoken';
-import config from '../configs/configs.js';
+import config from '../modules/configs/configs.js';
 import logger from '../modules/logger/logger.js';
 import { customers, employees, administrators } from './websocket-users.js';
 

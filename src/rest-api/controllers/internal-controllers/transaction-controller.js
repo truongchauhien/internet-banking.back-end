@@ -1,6 +1,6 @@
-import * as transactionModel from '../../models/transaction-model.js';
-import * as accountModel from '../../models/account-model.js';
-import * as customerModel from '../../models/customer-model.js';
+import * as transactionModel from '../../../models/transaction-model.js';
+import * as accountModel from '../../../models/account-model.js';
+import * as customerModel from '../../../models/customer-model.js';
 import HttpErrorClasses from '../extensions/http-errors.js';
 
 export const getOwnTransactions = async (req, res) => {
