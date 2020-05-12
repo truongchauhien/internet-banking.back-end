@@ -2,9 +2,9 @@ import config from '../modules/configs/configs.js';
 import express from 'express';
 import morgan from 'morgan';
 import cors from 'cors';
-import errorHandler from './middlewares/error-handling.js';
-import internalRouter from './routes/internal-routes.js';
-import publicRouter from './routes/public-routes.js';
+import errorHandler from './commons/middlewares/error-handling.js';
+import internalRouter from './internal/internal-routes.js';
+import publicRouter from './public/public-routes.js';
 
 const app = express();
 
