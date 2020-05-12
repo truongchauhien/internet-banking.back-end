@@ -1,8 +1,8 @@
 import { pool_query } from '../database/mysql-db.js';
 
 export const getCurrentAccountByCustomerId = async (customerId) => {
-    const [results, fields] = await pool_query('SELECT * FROM accounts WHERE customerId = ? AND accountType = ?', [customerId, 'CURRENT']);
-    if (results) {
+    const [results] = await pool_query('SELECT * FROM accounts WHERE customerId = ? AND accountType = ?', [customerId, 'CURRENT']);
+    if (Array.isArray(results) && results.length > 0) {
         return results[0];
     }
 
@@ -10,26 +10,27 @@ export const getCurrentAccountByCustomerId = async (customerId) => {
 };
 
 export const getAllByCustomerId = async (customerId) => {
-    const [results, fields] = await pool_query('SELECT * FROM accounts WHERE customerId = ?', [customerId]);
-    if (results) {
+    const [results] = await pool_query('SELECT * FROM accounts WHERE customerId = ?', [customerId]);
+    if (Array.isArray(results)) {
         return results;
     }
 
-    return [];
-};
-
-export const getByAccountNumber = async (accountNumber) => {
-    const [results] = await pool_query('SELECT * FROM accounts WHERE accountNumber = ?', [accountNumber]);
-    if (results) {
-        return results[0];
-    }
     return null;
 };
 
-export const getById = async (accountId) => {
-    const [results] = await pool_query('SELECT * FROM accounts WHERE id = ?', [accountId]);
+export const getByAccountNumber = (accountNumber) => {
+    return getAccount('accountNumber', accountNumber);
+};
+
+export const getById = (accountId) => {
+    return getAccount('id', accountId);
+};
+
+async function getAccount(identityType, identity) {
+    const [results] = await pool_query('SELECT * FROM accounts WHERE ?? = ?', [identityType, identity]);
     if (Array.isArray(results) && results.length > 0) {
         return results[0];
     }
+
     return null;
-};
+}
