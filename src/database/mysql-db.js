@@ -9,7 +9,14 @@ export const pool = mysql.createPool({
     port: config.get('database.port'),
     user: config.get('database.user'),
     password: config.get('database.password'),
-    database: config.get('database.name')
+    database: config.get('database.name'),
+    typeCast: (field, next) => {
+        if (field.type === 'TINY' && field.length === 1) {
+            return (field.string() === '1');
+        }
+        
+        return next();
+    }
 });
 
 /**
