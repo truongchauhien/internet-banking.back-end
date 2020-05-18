@@ -71,8 +71,7 @@ const verifyRecaptcha = async (captchaToken) => {
  * @param {Response} res
  */
 export const userLogin = async (req, res, next) => {
-    const { userType = 'customer' } = req.query;
-    const { userName, password, captchaToken } = req.body;
+    const { userName, password, userType = 'customer', captchaToken } = req.body;
 
     if (!await verifyRecaptcha(captchaToken)) throw new HttpErrors.BadRequest();
 
@@ -136,8 +135,7 @@ export const userLogin = async (req, res, next) => {
  * @param {Response} res
  */
 export const userRenewToken = async (req, res) => {
-    const { userType = 'customer' } = req.query;
-    const { userId, refreshToken } = req.body;
+    const { userId, userType = 'customer', refreshToken } = req.body;
 
     let user = null;
     switch (userType) {
@@ -195,7 +193,7 @@ export const userRenewToken = async (req, res) => {
 };
 
 export const createResetPasswordRequest = async (req, res) => {
-    const { userType = 'customer' } = req.query;
+    const { userType = 'customer' } = req.body;
 
     switch (userType) {
         case 'customer':
@@ -226,7 +224,7 @@ async function createPasswordResetForCustomer(req, res) {
 };
 
 export const confirmPasswordReset = async (req, res) => {
-    const { userType = 'customer' } = req.query;
+    const { userType = 'customer' } = req.body;
 
     switch (userType) {
         case 'customer':
