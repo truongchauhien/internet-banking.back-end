@@ -10,7 +10,7 @@ import TRANSFER_TYPES from '../../../models/constants/transfer-types.js';
 import generateTOTP from '../../../modules/otp/generate-totp.js';
 import verifyTOTP from '../../../modules/otp/verify-totp.js';
 import { sendOtpMailForTransferCofirmation } from '../../../modules/mail/send-otp-mail.js';
-import { notifyDebtPaid } from '../../../modules/realtime-notifications/customer-notifications.js';
+import { notifyDebtPaid } from '../../../modules/push-service/customer-pusher.js';
 import bankingApiModules from '../../../modules/banking-api-modules/banking-api-modules.js';
 
 export const createTransfer = async (req, res) => {

@@ -4,7 +4,7 @@ import NOTIFICATION_STATUS, { REVERSE_NOTIFICATION_STATUS } from '../../models/c
 import NOTIFICATION_TYPES, { REVERSE_NOTIFICATION_TYPES } from '../../models/constants/notification-types.js';
 import logger from '../logger/logger.js';
 
-const EXCHANGE_NAME = 'customer-notifications';
+const EXCHANGE_NAME = 'messages-to-customers';
 
 /**
  * @type {import('amqplib').Channel}
@@ -40,7 +40,8 @@ export const notify = ({ customerId, title, content, typeId = NOTIFICATION_TYPES
         channel.publish(EXCHANGE_NAME, '', Buffer.from(message), {
             contentType: 'application/json',
             headers: {
-                customerId: customerId
+                userId: customerId,
+                userType: 'customer'
             }
         });
     }).catch(err => {

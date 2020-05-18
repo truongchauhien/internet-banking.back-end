@@ -6,7 +6,7 @@ import {
     notifyDebtCreated,
     notifyDebtCanceledBySender,
     notifyDebtCanceledByReceiver
-} from '../../../modules/realtime-notifications/customer-notifications.js';
+} from '../../../modules/push-service/customer-pusher.js';
 
 export const createDebt = async (req, res) => {
     const { userId: customerId } = req.auth;
