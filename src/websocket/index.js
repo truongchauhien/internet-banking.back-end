@@ -1,8 +1,11 @@
 import url from 'url';
 import webSocketServer from './websocket-server.js';
-import comsumeCustomerNotifications from './consumers/customer-notification-consumer.js';
+import {
+    consumeCustomerNotifications,
+    consumeAdministratorNotifications
+} from './consumers/message-consumers.js';
 
-export const integrate = (httpServer) => {
+export const integrateWebSocketToHttpServer = (httpServer) => {
     httpServer.on('upgrade', (request, socket, head) => {
         const pathname = url.parse(request.url).pathname;
 
@@ -19,6 +22,7 @@ export const integrate = (httpServer) => {
 let isSetup = false;
 export const setup = async () => {
     if (isSetup) return;
-    await comsumeCustomerNotifications();
+    await consumeCustomerNotifications();
+    await consumeAdministratorNotifications();
     isSetup = true;
 };
