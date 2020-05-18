@@ -16,7 +16,8 @@ import reconciliationRouter from './reconciliations/reconciliation-routes.js';
 
 const router = express.Router();
 router.use('/auth', authenticationRouter);
-router.use(asyncWrapper(verifyAccessToken)); // Below routes use access token.
+router.use('/reconciliations', reconciliationRouter);
+router.use(asyncWrapper(verifyAccessToken)); // Below routes use access token by defaults.
 router.use('/customers', customerRouter);
 router.use('/accounts', accountRouter);
 router.use('/banks', bankRouter);
@@ -27,6 +28,5 @@ router.use('/transactions', transactionRouter);
 router.use('/notifications', notificationRouter);
 router.use('/deposits', depositRouter);
 router.use('/employees', employeeRouter);
-router.use('/reconciliations', reconciliationRouter);
 
 export default router;
