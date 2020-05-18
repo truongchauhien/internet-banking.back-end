@@ -1,15 +1,15 @@
 import mysql from 'mysql';
-import config from '../configs/configs.js';
+import configs from '../configs/configs.js';
 import { MySqlError } from './mysql-error.js';
 import logger from '../logger/logger.js';
 
 export const pool = mysql.createPool({
     connectionLimit: 255,
-    host: config.get('database.host'),
-    port: config.get('database.port'),
-    user: config.get('database.user'),
-    password: config.get('database.password'),
-    database: config.get('database.name'),
+    host: configs.get('database.host'),
+    port: configs.get('database.port'),
+    user: configs.get('database.user'),
+    password: configs.get('database.password'),
+    database: configs.get('database.name'),
     typeCast: (field, next) => {
         if (field.type === 'TINY' && field.length === 1) {
             return (field.string() === '1');
