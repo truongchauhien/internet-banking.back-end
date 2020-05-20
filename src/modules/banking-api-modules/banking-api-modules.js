@@ -12,7 +12,7 @@ export const setup = async () => {
     if (isSetup) return;
 
     // Import banking api modules.
-    const banksHasApi = (await bankModel.getAllBanks()).filter(bank => bank.hasApi);
+    const banksHasApi = (await bankModel.getAll()).filter(bank => bank.hasApi);
     const importedBankingApiModules = await importBankingApiModules();
 
     for (const bank of banksHasApi) {
