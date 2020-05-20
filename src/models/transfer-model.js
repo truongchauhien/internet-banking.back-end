@@ -169,7 +169,7 @@ export const createPayDebtTransfer = ({ debtId, fromAccountNumber, toAccountNumb
             typeId: TRANSFER_TYPES.PAY_DEBT_TRANSFER
         };
         [results] = await connection.query('INSERT INTO transfers SET ?', [transfer]);
-        
+
         const transferId = results.insertId;
         await connection.query('UPDATE debts SET transferId = ? WHERE id = ?', [transferId, debtId])
 
@@ -202,19 +202,19 @@ export const confirmIntraBankTransfer = (transferId) => {
         let senderLowerBoundBalance = transfer.fromAmount + transfer.fromFee;
         if (fromAccount.balance < senderLowerBoundBalance) throw new TransactionCanceled();
 
-            [results] = await connection.query('UPDATE accounts SET balance = ? WHERE id = ?', [
+        [results] = await connection.query('UPDATE accounts SET balance = ? WHERE id = ?', [
             fromAccount.balance - transfer.fromAmount - transfer.fromFee,
-                fromAccount.id
-            ]);
-            [results] = await connection.query('UPDATE accounts SET balance = ? WHERE id = ?', [
+            fromAccount.id
+        ]);
+        [results] = await connection.query('UPDATE accounts SET balance = ? WHERE id = ?', [
             toAccount.balance + transfer.toAmount - transfer.toFee,
-                toAccount.id
-            ]);
+            toAccount.id
+        ]);
 
-            [results] = await connection.query('INSERT INTO transactions (accountId, amount, currencyId, typeId) VALUES ?', [[
+        [results] = await connection.query('INSERT INTO transactions (accountId, amount, currencyId, typeId) VALUES ?', [[
             [fromAccount.id, -transfer.fromAmount, fromAccount.currencyId, TRANSACTION_TYPES.INTRABANK_TRANSFER],
             [toAccount.id, transfer.toAmount, toAccount.currencyId, TRANSACTION_TYPES.INTRABANK_RECEIVE]
-            ]]);
+        ]]);
 
         if (transfer.fromFee > 0) {
             [results] = await connection.query('INSERT INTO transactions (accountId, amount, currencyId, typeId) VALUES ?', [[
@@ -290,38 +290,41 @@ export const confirmInterBankTransfer = (transferId) => {
 export const confirmPayDebtTransfer = (transferId) => {
     return doTransaction(async (connection) => {
         let results;
+
+        // Get transfer.
         [results] = await connection.query('SELECT * FROM transfers WHERE id = ?', transferId);
         const transfer = results[0];
-
         if (transfer.typeId !== TRANSFER_TYPES.PAY_DEBT_TRANSFER) {
             throw new TransactionCanceled();
         }
 
+        // Get sender account.
         [results] = await connection.query('SELECT * FROM accounts WHERE accountNumber = ?', [transfer.fromAccountNumber]);
         const fromAccount = results[0];
+        // Get beneficiary account.
         [results] = await connection.query('SELECT * FROM accounts WHERE accountNumber = ?', [transfer.toAccountNumber]);
         const toAccount = results[0];
 
-        let minimumBalance = transfer.amount + transfer.fee;
-        if (fromAccount.balance < minimumBalance) throw new TransactionCanceled();
+        // Check sender balance.
+        let senderLowerBoundBalance = transfer.fromAmount + transfer.fromFee;
+        if (fromAccount.balance < senderLowerBoundBalance) throw new TransactionCanceled();
 
         [results] = await connection.query('UPDATE accounts SET balance = ? WHERE id = ?', [
-            fromAccount.balance - (transfer.amount + transfer.fee),
+            fromAccount.balance - - transfer.fromAmount - transfer.fromFee,
             fromAccount.id
         ]);
         [results] = await connection.query('UPDATE accounts SET balance = ? WHERE id = ?', [
-            toAccount.balance + transfer.amount,
+            toAccount.balance + transfer.toAmount, // toFee = 0.
             toAccount.id
         ]);
 
         [results] = await connection.query('INSERT INTO transactions (accountId, amount, currencyId, typeId) VALUES ?', [[
-            [fromAccount.id, -transfer.amount, CURRENCIES.vnd, TRANSACTION_TYPES.PAY_DEBT_TRANSFER],
-            [fromAccount.id, -transfer.fee, CURRENCIES.vnd, TRANSACTION_TYPES.INTRABANK_TRANSFER_FEE],
-            [toAccount.id, transfer.amount, CURRENCIES.vnd, TRANSACTION_TYPES.PAY_DEBT_RECEIVE]
+            [fromAccount.id, -transfer.fromAmount, fromAccount.currencyId, TRANSACTION_TYPES.PAY_DEBT_TRANSFER],
+            [toAccount.id, transfer.toAmount, toAccount.currencyId, TRANSACTION_TYPES.PAY_DEBT_RECEIVE],
+            [fromAccount.id, -transfer.fromFee, fromAccount.currencyId, TRANSACTION_TYPES.INTRABANK_TRANSFER_FEE]
         ]]);
 
-        [results] = await connection.query('UPDATE transfers SET statusId = ? WHERE id = ?', [TRANSFER_STATUS.COMFIRMED, transfer.id]);
-
+        [results] = await connection.query('UPDATE transfers SET statusId = ?, comfirmedAt = CURRENT_TIMESTAMP WHERE id = ?', [TRANSFER_STATUS.COMFIRMED, transfer.id]);
         [results] = await connection.query('UPDATE debts SET statusId = ? WHERE transferId = ?', [DEBT_STATUS.PAID, transfer.id]);
     });
 };
