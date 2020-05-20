@@ -126,21 +126,45 @@ export const createInterbankTransfer = ({ customerId, fromAccountNumber, toAccou
     });
 };
 
-export const createPayDebtTransfer = ({ debtId, customerId, fromAccountNumber, toAccountNumber, amount, message, otp }) => {
+export const createPayDebtTransfer = ({ debtId, fromAccountNumber, toAccountNumber, amount, message, otp }) => {
     return doTransaction(async (connection) => {
+        const currentDate = new Date();
+
         let results;
+        [results] = await connection.query('SELECT customerId, currencyId FROM accounts WHERE accountNumber = ?', [fromAccountNumber]);
+        const fromAccount = results[0];
+        [results] = await connection.query('SELECT customerId, currencyId FROM accounts WHERE accountNumber = ?', [toAccountNumber]);
+        const toAccount = results[0];
+
+        [results] = await connection.query('SELECT exchangeRate FROM exchange_rates WHERE fromCurrencyId = ? AND toCurrencyId = ? AND fromDate <= ? AND ? < toDate ',
+            [fromAccount.currencyId, toAccount.currencyId, currentDate, currentDate]
+        );
+        const exchangRate = results[0].exchangeRate;
+        
         [results] = await connection.query('SELECT * FROM fees WHERE id = ?', [FEES.INTRA_BANK_TRANSFER]);
         const fee = results[0];
+        [results] = await connection.query('SELECT exchangeRate FROM exchange_rates WHERE fromCurrencyId = ? AND toCurrencyId = ? AND fromDate <= ? AND ? < toDate ',
+            [fromAccount.currencyId, fee.currencyId, currentDate, currentDate]
+        );
+        const feeExchangRate = results[0].exchangeRate;
+        let fromFee = fee.amount * feeExchangRate;
 
         const transfer = {
-            customerId,
+            fromCustomerId: fromAccount.customerId,
+            toCustomerId: toAccount.customerId,
             fromAccountNumber,
             toAccountNumber,
-            amount,
-            fee: fee.amount,
-            currencyId: CURRENCIES.vnd,
+            fromBankId: null,
+            toBankId: null,
+            fromCurrencyId: fromAccount.currencyId,
+            toCurrencyId: toAccount.currencyId,
+            fromAmount: amount,
+            toAmount: amount * exchangRate,
+            fromFee: fromFee,
+            toFee: 0,
             message,
             otp,
+            otpAttempts: 0,
             statusId: TRANSFER_STATUS.OTP_PENDING,
             typeId: TRANSFER_TYPES.PAY_DEBT_TRANSFER
         };
