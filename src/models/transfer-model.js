@@ -187,7 +187,6 @@ export const confirmIntraBankTransfer = (transferId) => {
         // Get transfer.
         [results] = await connection.query('SELECT * FROM transfers WHERE id = ?', [transferId]);
         const transfer = results[0];
-
         if (transfer.typeId !== TRANSFER_TYPES.INTRABANK_TRANSFER) {
             throw new TransactionCanceled();
         }
@@ -195,69 +194,41 @@ export const confirmIntraBankTransfer = (transferId) => {
         // Get sender account.
         [results] = await connection.query('SELECT * FROM accounts WHERE accountNumber = ?', [transfer.fromAccountNumber]);
         const fromAccount = results[0];
-
         // Get beneficiary account.
         [results] = await connection.query('SELECT * FROM accounts WHERE accountNumber = ?', [transfer.toAccountNumber]);
         const toAccount = results[0];
 
-        if (transfer.bankId) throw new TransactionCanceled();
+        // Check sender balance.
+        let senderLowerBoundBalance = transfer.fromAmount + transfer.fromFee;
+        if (fromAccount.balance < senderLowerBoundBalance) throw new TransactionCanceled();
 
-        // Check balance.
-        let minimumBalance = transfer.amount;
-        if (transfer.fee > 0) {
-            minimumBalance += transfer.fee;
-        } else {
-            if (transfer.amount <= Math.abs(transfer.fee)) throw new TransactionCanceled();
-        }
-        if (fromAccount.balance < minimumBalance) throw new TransactionCanceled();
-
-        if (transfer.fee > 0) {
             [results] = await connection.query('UPDATE accounts SET balance = ? WHERE id = ?', [
-                fromAccount.balance - (transfer.amount + transfer.fee),
+            fromAccount.balance - transfer.fromAmount - transfer.fromFee,
                 fromAccount.id
             ]);
             [results] = await connection.query('UPDATE accounts SET balance = ? WHERE id = ?', [
-                toAccount.balance + transfer.amount,
+            toAccount.balance + transfer.toAmount - transfer.toFee,
                 toAccount.id
             ]);
 
             [results] = await connection.query('INSERT INTO transactions (accountId, amount, currencyId, typeId) VALUES ?', [[
-                [fromAccount.id, -transfer.amount, CURRENCIES.vnd, TRANSACTION_TYPES.INTRABANK_TRANSFER],
-                [fromAccount.id, -transfer.fee, CURRENCIES.vnd, TRANSACTION_TYPES.INTRABANK_TRANSFER_FEE],
-                [toAccount.id, transfer.amount, CURRENCIES.vnd, TRANSACTION_TYPES.INTRABANK_RECEIVE]
+            [fromAccount.id, -transfer.fromAmount, fromAccount.currencyId, TRANSACTION_TYPES.INTRABANK_TRANSFER],
+            [toAccount.id, transfer.toAmount, toAccount.currencyId, TRANSACTION_TYPES.INTRABANK_RECEIVE]
             ]]);
-        } else if (transfer.fee < 0) {
-            [results] = await connection.query('UPDATE accounts SET balance = ? WHERE id = ?', [
-                fromAccount.balance - transfer.amount,
-                fromAccount.id
-            ]);
-            [results] = await connection.query('UPDATE accounts SET balance = ? WHERE id = ?', [
-                toAccount.balance + (transfer.amount - Math.abs(transfer.fee)),
-                toAccount.id
-            ]);
 
+        if (transfer.fromFee > 0) {
             [results] = await connection.query('INSERT INTO transactions (accountId, amount, currencyId, typeId) VALUES ?', [[
-                [fromAccount.id, -transfer.amount, CURRENCIES.vnd, TRANSACTION_TYPES.INTRABANK_TRANSFER],
-                [toAccount.id, -Math.abs(transfer.fee), CURRENCIES.vnd, TRANSACTION_TYPES.INTRABANK_TRANSFER_FEE],
-                [toAccount.id, transfer.amount - Math.abs(transfer.fee), CURRENCIES.vnd, TRANSACTION_TYPES.INTRABANK_RECEIVE]
-            ]]);
-        } else {
-            [results] = await connection.query('UPDATE accounts SET balance = ? WHERE id = ?', [
-                fromAccount.balance - transfer.amount,
-                fromAccount.id
-            ]);
-            [results] = await connection.query('UPDATE accounts SET balance = ? WHERE id = ?', [
-                toAccount.balance + transfer.amount,
-                toAccount.id
-            ]);
-
-            [results] = await connection.query('INSERT INTO transactions (accountId, amount, currencyId, typeId) VALUES ?', [[
-                [fromAccount.id, -transfer.amount, CURRENCIES.vnd, TRANSACTION_TYPES.INTRABANK_TRANSFER],
-                [toAccount.id, transfer.amount, CURRENCIES.vnd, TRANSACTION_TYPES.INTRABANK_RECEIVE]
+                [fromAccount.id, -transfer.fromFee, fromAccount.currencyId, TRANSACTION_TYPES.INTRABANK_TRANSFER_FEE]
             ]]);
         }
 
-        [results] = await connection.query('UPDATE transfers SET statusId = ? WHERE id = ?', [TRANSFER_STATUS.COMFIRMED, transferId]);
+        if (transfer.toFee > 0) {
+            [results] = await connection.query('INSERT INTO transactions (accountId, amount, currencyId, typeId) VALUES ?', [[
+                [toAccount.id, -transfer.toFee, toAccount.currencyId, TRANSACTION_TYPES.INTRABANK_TRANSFER_FEE]
+            ]]);
+        }
+
+        [results] = await connection.query('UPDATE transfers SET statusId = ?, comfirmedAt = CURRENT_TIMESTAMP WHERE id = ?', [TRANSFER_STATUS.COMFIRMED, transferId]);
     });
 };
 
