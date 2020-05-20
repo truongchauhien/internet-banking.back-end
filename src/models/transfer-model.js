@@ -16,26 +16,71 @@ export const getTransferById = async (transferId) => {
     return null;
 };
 
-export const createIntrabankTransfer = ({ customerId, fromAccountNumber, toAccountNumber, amount, whoPayFee, message, otp }) => {
+export const createIntrabankTransfer = ({ fromAccountNumber, toAccountNumber, amount, whoPayFee, message, otp }) => {
     return doTransaction(async (connection) => {
+        const currentDate = new Date();
+
         let results;
+        [results] = await connection.query('SELECT * FROM accounts WHERE accountNumber = ?', [fromAccountNumber]);
+        const fromAccount = results[0];
+        [results] = await connection.query('SELECT * FROM accounts WHERE accountNumber = ?', [toAccountNumber]);
+        const toAccount = results[0];
+        [results] = await connection.query(
+            'SELECT exchangeRate ' +
+            'FROM exchange_rates ' +
+            'WHERE fromCurrencyId = ? AND toCurrencyId = ? ' +
+            '    AND fromDate <= ? AND ? < toDate ',
+            [fromAccount.currencyId, toAccount.currencyId, currentDate, currentDate]
+        );
+        const exchangRate = results[0].exchangeRate;
+
         [results] = await connection.query('SELECT * FROM fees WHERE id = ?', [FEES.INTRA_BANK_TRANSFER]);
         const fee = results[0];
+        let fromFee = 0;
+        let toFee = 0;
+        if (whoPayFee === 'sender') {
+            [results] = await connection.query(
+                'SELECT exchangeRate ' +
+                'FROM exchange_rates ' +
+                'WHERE fromCurrencyId = ? AND toCurrencyId = ? ' +
+                '    AND fromDate <= ? AND ? < toDate ',
+                [fromAccount.currencyId, fee.currencyId, currentDate, currentDate]
+            );
+            const feeExchangeRate = results[0].exchangeRate;
 
-        let feeAmount = fee.amount;
+            fromFee = fee.amount * feeExchangeRate;
+            toFee = 0;
+        }
         if (whoPayFee === 'beneficiary') {
-            feeAmount = -feeAmount;
+            [results] = await connection.query(
+                'SELECT exchangeRate ' +
+                'FROM exchange_rates ' +
+                'WHERE fromCurrencyId = ? AND toCurrencyId = ? ' +
+                '    AND fromDate <= ? AND ? < toDate ',
+                [toAccount.currencyId, fee.currencyId, currentDate, currentDate]
+            );
+            const feeExchangeRate = results[0].exchangeRate;
+
+            fromFee = 0;
+            toFee = fee.amount * feeExchangeRate;
         }
 
         const transfer = {
-            customerId,
+            fromCustomerId: fromAccount.customerId,
+            toCustomerId: toAccount.customerId,
             fromAccountNumber,
             toAccountNumber,
-            amount,
-            fee: feeAmount,
-            currencyId: CURRENCIES.vnd,
+            fromBankId: null,
+            toBankId: null,
+            fromCurrencyId: fromAccount.currencyId,
+            toCurrencyId: toAccount.currencyId,
+            fromAmount: amount,
+            toAmount: amount * exchangRate,
+            fromFee,
+            toFee,
             message,
             otp,
+            otpAttempts: 0,
             statusId: TRANSFER_STATUS.OTP_PENDING,
             typeId: TRANSFER_TYPES.INTRABANK_TRANSFER
         };
