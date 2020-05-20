@@ -1,12 +1,17 @@
 import dotenv from 'dotenv';
 import convict from 'convict';
 
+/*
+Notice:
+- Environment variables that are already defined in `process.env` will not be overwritten by dotenv.
+- You can use 'cross-env' to set environment variables in commandline or npm scripts, and the values will not be overritten.
+*/
 dotenv.config();
 
 const configs = convict({
     env: {
         doc: 'The application environment.',
-        format: ['production', 'development'],
+        format: ['production', 'development', 'testing'],
         default: 'development',
         env: 'NODE_ENV'
     },
