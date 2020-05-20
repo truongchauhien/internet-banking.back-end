@@ -146,7 +146,7 @@ export const doQuery = async (query) => {
 (async () => {
     pool.getConnection((err, connection) => {
         if (err) {
-            logger.err(err);
+            logger.error(err);
         } else {
             logger.info('The connection to MySQL server is OK.');
             connection.release();
