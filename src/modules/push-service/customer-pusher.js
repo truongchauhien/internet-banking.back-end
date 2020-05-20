@@ -76,11 +76,11 @@ export const notifyDebtCanceledByReceiver = (toCustomerId, whoCanceled, message)
     });
 };
 
-export const notifyDebtPaid = (toCustomerId, whoPaid, message) => {
+export const notifyDebtPaid = (toCustomerId, whoPaid) => {
     notify({
         customerId: toCustomerId,
         title: 'Nhắc nợ được thanh toán',
-        message: `Một nhắc nợ của quý khách vừa được thanh toán bởi ${whoPaid} với lí do "${message}".`,
+        content: `${whoPaid} vừa thanh toán nhắc nợ của quý khách.`,
         typeId: NOTIFICATION_TYPES.DEBT_PAID
     });
 };
