@@ -5,6 +5,7 @@ import restApi from './rest-api/index.js';
 import { setup as setupRabbitMQ } from './modules/rabbitmq/rabbitmq.js';
 import { setup as setupPushService } from './modules/push-service/index.js';
 import { integrateWebSocketToHttpServer, setup as setupWebSocket } from './websocket/index.js';
+import { setup as setupPGPService } from './modules/pgp-service/index.js';
 import { setup as setupBankingApiModules } from './modules/banking-api-modules/banking-api-modules.js';
 
 const httpServer = http.createServer();
@@ -13,6 +14,7 @@ const PORT = configs.get('port');
     await setupRabbitMQ();
     await setupPushService();
     await setupWebSocket();
+    await setupPGPService();
     await setupBankingApiModules();
 
     httpServer.on('request', restApi);
@@ -21,6 +23,6 @@ const PORT = configs.get('port');
         logger.info(`App listening on port ${PORT}.`);
     });
 })().catch(err => {
-    logger.error(JSON.stringify(err));
+    logger.error(err.name + '\n' + err.message + '\n' + err.stack);
     process.exit(1);
 });
