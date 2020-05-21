@@ -1,10 +1,9 @@
-import { generateKeyPair } from 'crypto';
+import crypto from 'crypto';
 import { promises as fs } from 'fs';
-const { writeFile } = fs;
 
 (async () => {
     const [publicKey, privateKey] = await (new Promise((resolve, reject) => {
-        generateKeyPair('rsa', {
+        crypto.generateKeyPair('rsa', {
             modulusLength: 4096,
             publicKeyEncoding: {
                 type: 'spki',
@@ -24,7 +23,7 @@ const { writeFile } = fs;
     }));
 
     await Promise.all([
-        writeFile('rsa-public.key', publicKey),
-        writeFile('rsa-private.key', privateKey)
+        fs.writeFile('rsa.public.key', publicKey),
+        fs.writeFile('rsa.private.key', privateKey)
     ]);
 })();

@@ -10,8 +10,8 @@ const { writeFile } = fs;
     });
 
     await Promise.all([
-        writeFile('pgp-public.key', publicKeyArmored),
-        writeFile('pgp-private.key', privateKeyArmored),
-        writeFile('pgp-revocation.key', revocationCertificate)
+        writeFile('pgp.public.key', publicKeyArmored),
+        writeFile('pgp.private.key', privateKeyArmored),
+        writeFile('pgp.evocation.key', revocationCertificate)
     ]);
 })();
