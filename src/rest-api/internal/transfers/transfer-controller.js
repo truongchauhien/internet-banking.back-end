@@ -64,7 +64,7 @@ export const getTransfer = async (req, res) => {
 
 async function createIntrabankTransfer(req, res) {
     const { userId: customerId } = req.auth;
-    const { fromAccountNumber, toAccountNumber, amount, message, whoPayFee } = req.body.transfer;
+    const { fromAccountNumber, toAccountNumber, amount, message, whoPayFee } = req.body;
 
     const customer = await customerModel.getByAccountNumber(fromAccountNumber);
     if (!customer) throw new HttpErrors.BadRequest();
@@ -95,7 +95,12 @@ async function createInterbankTransfer(req, res) {
     if (!customer) throw new HttpErrors.BadRequest();
     if (customer.id !== customerId) throw new HttpErrors.Forbidden();
 
-    const otp = generateTOTP(customer.secret);
+    const bankingApiModule = bankingApiModules[toBankId];
+    if (!bankingApiModule) throw new HttpErrors.BadRequest();
+    const toAccount = await bankingApiModule.getAccount({ accountNumber: toAccountNumber });
+    if (!toAccount) throw new HttpErrors.BadRequest();
+
+    const otp = generateTOTP(customer.otpSecret);
     const createdTransfer = await transferModel.createInterbankTransfer({
         fromAccountNumber,
         toAccountNumber,
@@ -105,8 +110,8 @@ async function createInterbankTransfer(req, res) {
         otp,
         whoPayFee
     });
-    
-    sendOtpMailForTransferCofirmation({ customerName: customer.fullName, toEmail: customer.email, otp: generatedOtp });
+
+    sendOtpMailForTransferCofirmation({ customerName: customer.fullName, toEmail: customer.email, otp: otp });
 
     return res.status(201).json({
         transfer: _.omit(createdTransfer, ['otp'])
@@ -149,6 +154,7 @@ async function confirmIntrabankTransfer(req, res) {
 
     const transfer = await transferModel.getTransferById(transferId);
     if (!transfer) throw new HttpErrors.NotFound();
+    if (transfer.typeId !== TRANSFER_TYPES.INTRABANK_TRANSFER) throw new HttpErrors.BadRequest();
     if (transfer.fromCustomerId !== customerId) throw new HttpErrors.Forbidden();
 
     const customer = await customerModel.getById(customerId);
@@ -169,26 +175,30 @@ async function confirmInterbankTransfer(req, res) {
 
     const transfer = await transferModel.getTransferById(transferId);
     if (!transfer) throw new HttpErrors.NotFound();
-    if (transfer.customerId !== customerId) throw new HttpErrors.Forbidden();
-    if (!transfer.toBankId) throw new HttpErrors.BadRequest();
+    if (transfer.typeId !== TRANSFER_TYPES.INTERBANK_TRANSFER) throw new HttpErrors.BadRequest();
+    if (transfer.fromCustomerId !== customerId) throw new HttpErrors.Forbidden();
+
+    // Verify OTP.
     const customer = await customerModel.getById(customerId);
-    if (!verifyTOTP(otp, customer.otpSecret, 10)) throw new HttpErrors.Forbidden();
+    if (!verifyTOTP(otp, customer.otpSecret, 10)) throw new HttpErrors.Forbidden(ERRORS.INCORRECT_OTP);
+    if (transfer.otp !== otp) throw new HttpErrors.Forbidden(ERRORS.INCORRECT_OTP);
 
-    const targetBankingApi = bankingApiModules[transfer.toBankId];
-    if (!targetBankingApi) throw new HttpErrors.InternalServerError();
-    const transferCurrency = await currencyModel.getById(transfer.currencyId);
-    if (!transferCurrency) throw new HttpErrors.InternalServerError();
-    const apiCallResult = await targetBankingApi.transfer({
+    // Calling banking api of the target bank.
+    const bankingApiModule = bankingApiModules[transfer.toBankId];
+    if (!bankingApiModule) throw new HttpErrors.InternalServerError();
+    const currency = await currencyModel.getById(transfer.toCurrencyId);
+    if (!currency) throw new HttpErrors.InternalServerError();
+    if (!await bankingApiModule.transfer({
         accountNumber: transfer.toAccountNumber,
-        amount: transfer.amount,
-        currency: transferCurrency.code,
-        reason: transfer.message
-    });
-    if (!apiCallResult) {
-        await transferModel.makeTransferRejected(transferId);
+        amount: transfer.toAmount,
+        currency: currency.code,
+        message: transfer.message
+    })) {
+        await transferModel.makeTransferRejectedByTargetBank(transferId);
         throw new HttpErrors.InternalServerError();
-    }
+    };
 
+    // All things are OK.
     await transferModel.confirmInterBankTransfer(transferId);
 
     return res.status(200).json({
