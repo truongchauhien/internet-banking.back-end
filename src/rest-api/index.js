@@ -15,7 +15,7 @@ if (config.get('env') === 'development') {
     app.use(cors());
 }
 app.use('/api', internalRouter);
-app.use('/public/v1', publicRouter);
+app.use('/public-api', publicRouter);
 app.use(errorHandler);
 
 export default app;
