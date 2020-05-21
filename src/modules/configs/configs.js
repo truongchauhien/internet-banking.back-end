@@ -76,6 +76,9 @@ const configs = convict({
         port: 5672,
         user: 'guest',
         pass: 'guest'
+    },
+    bankingApiModules: {
+        path: './banking-api-modules-for-development'
     }
 });
 

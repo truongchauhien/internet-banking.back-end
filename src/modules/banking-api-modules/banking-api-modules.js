@@ -1,6 +1,7 @@
 import { readdirSync } from 'fs';
 import path, { dirname } from 'path';
-import { fileURLToPath } from 'url';
+import url from 'url';
+import configs from '../configs/configs.js';
 import * as bankModel from '../../models/bank-model.js';
 import logger from '../logger/logger.js';
 
@@ -31,13 +32,16 @@ export const setup = async () => {
 async function importBankingApiModules() {
     const modules = [];
 
-    const pathToApiDirectory = path.resolve(dirname(fileURLToPath(import.meta.url)), '../../../banking-api-modules');
-    const dirNames = readdirSync(pathToApiDirectory, { withFileTypes: true })
+    const pathToBankingApiModules = path.resolve(configs.get('bankingApiModules.path'));
+    const dirNames = readdirSync(pathToBankingApiModules, { withFileTypes: true })
         .filter(dir => dir.isDirectory())
         .map(dir => dir.name);
 
     for (const dirName of dirNames) {
-        const bankingApiModule = await import(`../../../banking-api-modules/${dirName}/index.js`);
+        const pathToModuleFile = path.resolve(pathToBankingApiModules, `${dirName}/index.js`);
+        const urlToModule = url.pathToFileURL(pathToModuleFile);
+        const bankingApiModule = await import(urlToModule);
+        bankingApiModule.setup && await bankingApiModule.setup();
         modules.push(bankingApiModule);
     }
 
