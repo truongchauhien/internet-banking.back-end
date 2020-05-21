@@ -1,5 +1,5 @@
 export const CURRENCIES = {
-    vnd: 1
+    VND: 1
 };
 
 export default CURRENCIES;
