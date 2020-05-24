@@ -12,5 +12,11 @@ router.get('/', selectHandlerByRole({
 router.get('/:identity', selectHandlerByRole({
     customer: asyncWrapper(accountController.getAccountForCustomer)
 }));
+router.delete('/:identity', selectHandlerByRole({
+    customer: asyncWrapper(accountController.closeAccount)
+}));
+router.post('/', selectHandlerByRole({
+    employee: asyncWrapper(accountController.createAccount)
+}));
 
 export default router;

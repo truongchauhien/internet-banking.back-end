@@ -1,6 +1,11 @@
-import * as accountModel from '../../../models/account-model.js';
+import _ from 'lodash';
 import HttpErrors from '../../commons/errors/http-errors.js';
 import bankingApiModules from '../../../modules/banking-api-modules/banking-api-modules.js';
+import * as accountModel from '../../../models/account-model.js';
+import * as customerModel from '../../../models/customer-model.js';
+import BANKS from '../../../models/constants/banks.js';
+import CURRENCIES from '../../../models/constants/currencies.js';
+import ACCOUNT_TYPES from '../../../models/constants/account-types.js';
 
 export const getAccountsForCustomer = async (req, res) => {
     const { userId } = req.auth;
@@ -16,25 +21,30 @@ export const getAccountsForCustomer = async (req, res) => {
 };
 
 export const getAccountsForEmployee = async (req, res) => {
-    const { customerId } = req.query;
-    const accounts = await accountModel.getAllByCustomerId(customerId);
+    const { customerId, customerUserName } = req.query;
+
+    let accounts;
+    if (customerId) {
+        accounts = await accountModel.getAllByCustomerId(customerId);
+    } else if (customerUserName) {
+        accounts = await accountModel.getAllByCustomerId(customerId);
+    }
+    else {
+        throw new HttpErrors.BadRequest();
+    }
 
     return res.status(200).json({
         accounts: accounts
     });
 };
 
-export const getAccountForCustomer = (req, res) => {
+export const getAccountHolderInformationForCustomer = (req, res) => {
     const { bankId } = req.query;
-
-    if (bankId) {
-        return getInternalAccountForCustomer(req, res);
-    }
-
-    return getExternalAccountForCustomer(req, res);
+    if (!bankId || bankId == BANKS.INTERNAL) return getInternalAccountHolderInformationForCustomer(req, res);
+    return getExternalAccountHolderInformationForCustomer(req, res);
 };
 
-async function getInternalAccountForCustomer(req, res) {
+async function getInternalAccountHolderInformationForCustomer(req, res) {
     const { userId: customerId } = req.auth;
     const { identityType = 'id' } = req.query;
     const { identity } = req.params;
@@ -50,31 +60,79 @@ async function getInternalAccountForCustomer(req, res) {
         default:
             throw new HttpErrors.BadRequest();
     }
-
     if (!account) throw new HttpErrors.NotFound();
-    if (customerId !== account.customerId) {
-        account = _.pick(account, ['id', 'accountNumber', 'fullName']);
-    }
-    account.holderName = account.fullName;
+    const customer = await customerModel.getById(account.customerId);
+    if (!customer) throw new HttpErrors.InternalServerError();
+
+    return res.status(200).json({
+        account: {
+            accountNumber: account.accountNumber,
+            holderName: customer.fullName
+        }
+    });
+}
+
+async function getExternalAccountHolderInformationForCustomer(req, res) {
+    const { identity: accountNumber } = req.params;
+    const { bankId, identityType = 'accountNumber' } = req.query;
+
+    if (identityType !== 'accountNumber') throw new HttpErrors.BadRequest('Get by account number only.');
+
+    // Bank ID is checked in the outer function.
+    const bankingApiModule = bankingApiModules[bankId];
+    if (!bankingApiModule) throw new HttpErrors.BadRequest('Target bank is not supported.');
+
+    const account = await bankingApiModule.getAccount({ accountNumber: accountNumber });
+    if (!account) throw new HttpErrors.NotFound('No account with provided account number.');
 
     return res.status(200).json({
         account: account
     });
 }
 
-async function getExternalAccountForCustomer(req, res) {
-    const { identity: accountNumber } = req.params;
-    const { bankId, identityType = 'accountNumber' } = req.query;
+export const closeAccount = async (req, res) => {
+    const { userId: customerId } = req.auth;
+    const { identity: closedAccountId } = req.params;
+    const { transferredAccountId } = req.body;
 
-    if (identityType !== 'accountNumber') throw new HttpErrors.BadRequest();
+    const customer = await customerModel.getById(customerId);
+    const closedAccount = await accountModel.getById(closedAccountId);
+    const transferredAccount = await accountModel.getById(transferredAccountId);
+    if (closedAccount.customerId !== customer.id) throw new HttpErrors.Forbidden();
+    if (transferredAccount.customerId !== customer.id) throw new HttpErrors.Forbidden();
+    if (closedAccount.id === transferredAccount.id) throw new HttpErrors.BadRequest();
 
-    const bankingApiModule = bankingApiModules[bankId];
-    if (!bankingApiModule) throw new HttpErrors.BadRequest();
-
-    const account = await bankingApiModule.getAccount({ accountNumber: accountNumber });
-    if (!account) throw new HttpErrors.NotFound();
+    await accountModel.closeAccount(closedAccountId, transferredAccountId);
+    const updatedTransferredAccount = await accountModel.getById(transferredAccount.id);
+    const updatedCustomer = await customerModel.getById(customer.id);
 
     return res.status(200).json({
-        account: foundAccount
+        transferredAccount: updatedTransferredAccount,
+        customer: {
+            defaultCurrentAccountId: updatedCustomer.defaultCurrentAccountId
+        }
     });
-}
+};
+
+export const createAccount = async (req, res) => {
+    const { customerId, type } = req.body;
+
+    let typeId;
+    if (type === 'current') {
+        typeId = ACCOUNT_TYPES.CURRENT;
+    } else if (type === 'deposit') {
+        typeId = ACCOUNT_TYPES.DEPOSIT;
+    } else {
+        throw new HttpErrors.BadRequest('Bad account type.');
+    }
+
+    const createdAccount = await accountModel.createAccount({
+        customerId,
+        currencyId: CURRENCIES.VND,
+        typeId
+    });
+
+    return res.status(201).json({
+        account: createdAccount
+    });
+};
