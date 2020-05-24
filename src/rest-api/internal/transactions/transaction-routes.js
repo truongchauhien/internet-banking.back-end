@@ -6,8 +6,8 @@ import * as transactionController from './transaction-controller.js';
 const router = express.Router();
 
 router.get('/', chooseHandlerByRole({
-    customer: asyncWrapper(transactionController.getOwnTransactions),
-    employee: asyncWrapper(transactionController.getTransactions)
+    customer: asyncWrapper(transactionController.getTransactionsForCustomer),
+    employee: asyncWrapper(transactionController.getTransactionsForEmployee)
 }));
 
 export default router;

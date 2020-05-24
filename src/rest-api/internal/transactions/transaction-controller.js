@@ -3,16 +3,16 @@ import * as accountModel from '../../../models/account-model.js';
 import * as customerModel from '../../../models/customer-model.js';
 import HttpErrors from '../../commons/errors/http-errors.js';
 
-export const getOwnTransactions = async (req, res) => {
+export const getTransactionsForCustomer = async (req, res) => {
     const { userId: customerId } = req.auth;
     const { accountId, startingAfter: rawStartingAfter } = req.query;
 
-    if (!accountId) throw new HttpErrorClasses.BadRequest();
+    if (!accountId) throw new HttpErrors.BadRequest();
     const account = await accountModel.getById(accountId);
     if (!account)
-        throw new HttpErrorClasses.NotFound();
+        throw new HttpErrors.NotFound();
     if (customerId !== account.customerId)
-        throw new HttpErrorClasses.Forbidden();
+        throw new HttpErrors.Forbidden();
 
     const startingAfter = Number.parseInt(rawStartingAfter) || null;
     const limit = 5;
@@ -30,12 +30,12 @@ export const getOwnTransactions = async (req, res) => {
     });
 };
 
-export const getTransactions = async (req, res) => {
+export const getTransactionsForEmployee = async (req, res) => {
     const { userName, startingAfter: rawStartingAfter } = req.query;
 
-    if (!userName) throw new HttpErrorClasses.BadRequest();
+    if (!userName) throw new HttpErrors.BadRequest();
     const customer = await customerModel.getByUserName(userName);
-    if (!customer) throw new HttpErrorClasses.NotFound();
+    if (!customer) throw new HttpErrors.NotFound();
 
     const startingAfter = Number.parseInt(rawStartingAfter) || null;
     const limit = 5;
