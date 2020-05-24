@@ -30,7 +30,7 @@ export const updateEmployee = async (req, res) => {
     if (updateFields.password) {
         updateFields.password = await bcrypt.hash(updateFields.password, 12);
     }
-    await employeeModel.update(employeeId, updateFields);
+    await employeeModel.updateById(employeeId, updateFields);
 
     return res.status(204).end();
 };
@@ -42,7 +42,7 @@ export const deleteEmployee = async (req, res) => {
     const employee = await employeeModel.getById(employeeId);
     if (!employee) throw new HttpErrors.NotFound();
 
-    await employeeModel.remove(employee.id);
+    await employeeModel.removeById(employee.id);
 
     return res.status(204).end();
 };
