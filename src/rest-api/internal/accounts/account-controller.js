@@ -60,16 +60,26 @@ async function getInternalAccountHolderInformationForCustomer(req, res) {
         default:
             throw new HttpErrors.BadRequest();
     }
+
     if (!account) throw new HttpErrors.NotFound();
     const customer = await customerModel.getById(account.customerId);
     if (!customer) throw new HttpErrors.InternalServerError();
-
-    return res.status(200).json({
-        account: {
-            accountNumber: account.accountNumber,
-            holderName: customer.fullName
-        }
-    });
+    account.holderName = customer.fullName;
+    
+    if (account.customerId === customerId) {
+        // Customer gets its own account, with full information.
+        return res.status(200).json({
+            account
+        });
+    } else {
+        // Customer gets other customer accounts, with limit information.
+        return res.status(200).json({
+            account: {
+                accountNumber: account.accountNumber,
+                holderName: customer.fullName
+            }
+        });
+    }
 }
 
 async function getExternalAccountHolderInformationForCustomer(req, res) {

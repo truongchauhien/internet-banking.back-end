@@ -10,7 +10,7 @@ router.get('/', selectHandlerByRole({
     employee: asyncWrapper(accountController.getAccountsForEmployee)
 }));
 router.get('/:identity', selectHandlerByRole({
-    customer: asyncWrapper(accountController.getAccountForCustomer)
+    customer: asyncWrapper(accountController.getAccountHolderInformationForCustomer)
 }));
 router.delete('/:identity', selectHandlerByRole({
     customer: asyncWrapper(accountController.closeAccount)
