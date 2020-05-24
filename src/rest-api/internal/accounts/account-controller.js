@@ -38,13 +38,19 @@ export const getAccountsForEmployee = async (req, res) => {
     });
 };
 
-export const getAccountHolderInformationForCustomer = (req, res) => {
+export const getAccountForCustomer = (req, res) => {
     const { bankId } = req.query;
-    if (!bankId || bankId == BANKS.INTERNAL) return getInternalAccountHolderInformationForCustomer(req, res);
-    return getExternalAccountHolderInformationForCustomer(req, res);
+    if (!bankId || bankId == BANKS.INTERNAL) return getInternalAccountForCustomer(req, res);
+    return getExternalAccount(req, res);
 };
 
-async function getInternalAccountHolderInformationForCustomer(req, res) {
+export const getAccountForEmployee = (req, res) => {
+    const { bankId } = req.query;
+    if (!bankId || bankId == BANKS.INTERNAL) return getInternalAccountForEmployee(req, res);
+    return getExternalAccount(req, res);
+};
+
+async function getInternalAccountForCustomer(req, res) {
     const { userId: customerId } = req.auth;
     const { identityType = 'id' } = req.query;
     const { identity } = req.params;
@@ -65,7 +71,7 @@ async function getInternalAccountHolderInformationForCustomer(req, res) {
     const customer = await customerModel.getById(account.customerId);
     if (!customer) throw new HttpErrors.InternalServerError();
     account.holderName = customer.fullName;
-    
+
     if (account.customerId === customerId) {
         // Customer gets its own account, with full information.
         return res.status(200).json({
@@ -82,13 +88,38 @@ async function getInternalAccountHolderInformationForCustomer(req, res) {
     }
 }
 
-async function getExternalAccountHolderInformationForCustomer(req, res) {
+async function getInternalAccountForEmployee(req, res) {
+    const { identityType = 'id' } = req.query;
+    const { identity } = req.params;
+
+    let account;
+    switch (identityType) {
+        case 'id':
+            account = await accountModel.getById(identity);
+            break;
+        case 'accountNumber':
+            account = await accountModel.getByAccountNumber(identity);
+            break;
+        default:
+            throw new HttpErrors.BadRequest('Bad identity type.');
+    }
+
+    if (!account) throw new HttpErrors.NotFound();
+    const customer = await customerModel.getById(account.customerId);
+    if (!customer) throw new HttpErrors.InternalServerError();
+    account.holderName = customer.fullName;
+
+    return res.status(200).json({
+        account
+    });
+}
+
+async function getExternalAccount(req, res) {
     const { identity: accountNumber } = req.params;
     const { bankId, identityType = 'accountNumber' } = req.query;
 
     if (identityType !== 'accountNumber') throw new HttpErrors.BadRequest('Get by account number only.');
 
-    // Bank ID is checked in the outer function.
     const bankingApiModule = bankingApiModules[bankId];
     if (!bankingApiModule) throw new HttpErrors.BadRequest('Target bank is not supported.');
 
