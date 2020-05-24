@@ -1,9 +1,11 @@
 import { pool_query, doTransaction, doQuery } from '../modules/database/mysql-db.js';
 import CURRENCIES from './constants/currencies.js';
+import ACCOUNT_TYPES from './constants/account-types.js';
+import ACCOUNT_STATUS from './constants/account-status.js';
 
 export const getByUserName = async userName => {
-    const [results, fields] = await pool_query('SELECT * FROM customers WHERE userName = ?', [userName]);
-    if (results) {
+    const [results] = await pool_query('SELECT * FROM customers WHERE userName = ?', [userName]);
+    if (Array.isArray(results) && results.length > 0) {
         return results[0];
     }
 
@@ -11,8 +13,8 @@ export const getByUserName = async userName => {
 }
 
 export const getByEmail = async email => {
-    const [results, fields] = await pool_query('SELECT * FROM customers WHERE email = ?', [email]);
-    if (results) {
+    const [results] = await pool_query('SELECT * FROM customers WHERE email = ?', [email]);
+    if (Array.isArray(results) && results.length > 0) {
         return results[0];
     }
 
@@ -40,6 +42,16 @@ export const getByAccountNumber = async accountNumber => {
     return null;
 };
 
+/**
+ * 
+ * @param {object} customer
+ * @param {string} customer.userName
+ * @param {string} customer.password
+ * @param {string} customer.fullName
+ * @param {string} customer.email
+ * @param {string} customer.phone
+ * @param {string} customer.otpSecret
+ */
 export const createCustomer = (customer) => {
     return doTransaction(async (connection) => {
         let results;
@@ -55,21 +67,31 @@ export const createCustomer = (customer) => {
 
         const accountNumber = '1' + nextAccountNumber.toString().padStart(9, '0');
         const currentAccount = {
-            accountNumber: accountNumber,
             customerId: customerId,
+            accountNumber: accountNumber,
             balance: 0,
-            currencyId: CURRENCIES.vnd,
-            accountType: 'CURRENT'
+            currencyId: CURRENCIES.VND,
+            statusId: ACCOUNT_STATUS.OPEN,
+            typeId: ACCOUNT_TYPES.CURRENT
         };
         [results] = await connection.query('INSERT INTO accounts SET ?', currentAccount);
+        const currentAccountId = results.insertId;
         // ================================
 
+        // Increment next account number
         [results] = await connection.query('UPDATE configurations SET value = ? WHERE name = ?', [nextAccountNumber + 1, 'nextAccountNumber']);
-        const currentAccountId = results.insertId;
+        // ================================
+
+        // Assign the created "current account" as the default current account for the created customer.
+        [results] = await connection.query('UPDATE customers SET defaultCurrentAccountId = ? WHERE id = ?', [currentAccountId, customerId]);
+        // ================================
 
         return {
-            id: customerId,
-            ...customer,
+            customer: {
+                id: customerId,
+                ...customer,
+                defaultCurrentAccountId: currentAccountId,
+            },
             currentAccount: {
                 id: currentAccountId,
                 ...currentAccount
@@ -78,6 +100,7 @@ export const createCustomer = (customer) => {
     });
 };
 
-export const update = (id, changes) => {
-    return pool_query('UPDATE customers SET ? WHERE id = ?', [changes, id]);
+export const updateById = async (id, changes) => {
+    const [results] = await pool_query('UPDATE customers SET ? WHERE id = ?', [changes, id]);
+    return results.changedRows > 0;
 };

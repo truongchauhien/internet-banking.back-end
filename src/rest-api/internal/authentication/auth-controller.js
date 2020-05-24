@@ -102,15 +102,15 @@ export const userLogin = async (req, res, next) => {
     const refreshToken = await generateRefreshToken();
 
     if (userType === 'customer') {
-        await customerModel.update(user.id, {
+        await customerModel.updateById(user.id, {
             refreshToken
         });
     } else if (userType === 'employee') {
-        await employeeModel.update(user.id, {
+        await employeeModel.updateById(user.id, {
             refreshToken
         });
     } else if (userType === 'administrator') {
-        await administratorModel.update(user.id, {
+        await administratorModel.updateById(user.id, {
             refreshToken
         });
     }
@@ -168,17 +168,17 @@ export const userRenewToken = async (req, res) => {
 
     switch (userType) {
         case 'customer':
-            await customerModel.update(userId, {
+            await customerModel.updateById(userId, {
                 refreshToken: newRefreshToken
             });
             break;
         case 'employee':
-            await employeeModel.update(userId, {
+            await employeeModel.updateById(userId, {
                 refreshToken: newRefreshToken
             });
             break;
         case 'administrator':
-            await administratorModel.update(userId, {
+            await administratorModel.updateById(userId, {
                 refreshToken: newRefreshToken
             });
             break;
