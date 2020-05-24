@@ -1,11 +1,11 @@
 import jwt from 'jsonwebtoken';
-import config from '../src/configs/configs.js';
+import configs from '../src/modules/configs/configs.js';
 
-const TOKEN_SECRET_KEY = config.get('tokenSecretKey');
+const TOKEN_SECRET_KEY = configs.get('tokenSecretKey');
 
 const generateAccessToken = (payload) => {
     return new Promise((resolve, reject) => {
-        jwt.sign(payload, TOKEN_SECRET_KEY, { expiresIn: '1d' }, (err, encoded) => {
+        jwt.sign(payload, TOKEN_SECRET_KEY, { expiresIn: '30d' }, (err, encoded) => {
             if (err) {
                 reject(err);
             } else {
