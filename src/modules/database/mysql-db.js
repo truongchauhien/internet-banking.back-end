@@ -16,7 +16,8 @@ export const pool = mysql.createPool({
         }
         
         return next();
-    }
+    },
+    timezone: 'Z'
 });
 
 /**
