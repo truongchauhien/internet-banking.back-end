@@ -15,7 +15,7 @@ export const createCustomer = async (req, res) => {
     delete createdCustomer['otpSecret'];
     return res.status(201).json({
         customer: createdCustomer,
-        currentAccount: createdCurrentAccount
+        account: createdCurrentAccount
     });
 };
 
