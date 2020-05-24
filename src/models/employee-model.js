@@ -41,10 +41,10 @@ export const createEmployee = async (employee) => {
     return results[0];
 };
 
-export const update = (id, changes) => {
+export const updateById = (id, changes) => {
     return pool_query('UPDATE employees SET ? WHERE id = ?', [changes, id]);
 };
 
-export const remove = (id) => {
+export const removeById = (id) => {
     return pool_query('DELETE FROM employees WHERE id = ?', [id]);
 };

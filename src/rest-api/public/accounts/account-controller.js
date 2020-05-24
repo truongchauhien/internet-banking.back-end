@@ -40,7 +40,7 @@ export const getAccount = async (req, res) => {
     if (!req.body.request.meta) throw new HttpErrors.BadRequest('Missing body.request.meta.');
     const { accountNumber } = req.body.request.payload;
     const { partnerCode, createdAt: rawCreatedAt } = req.body.request.meta;
-    
+
     if (!accountNumber) throw new HttpErrors.BadRequest('Bad account number.');
     if (!partnerCode) throw new HttpErrors.BadRequest('Bad partner code.');
 
@@ -54,8 +54,10 @@ export const getAccount = async (req, res) => {
         throw new HttpErrors.BadRequest('createdAt value is invalid.');
     }
     if (Number.isNaN(createdAt.getTime())) throw new HttpErrors.BadRequest('Bad created at.');
-    const timeDiffInMinutes = Math.round((Date.now() - createdAt.getTime()) / 1000 / 60);
-    if (timeDiffInMinutes < 0 || timeDiffInMinutes > 5) throw new HttpErrors.BadRequest('The request is expired.');
+    const timeDiffInMinutes = Math.abs(
+        Math.round((Date.now() - createdAt.getTime()) / 1000 / 60)
+    );
+    if (timeDiffInMinutes > 5) throw new HttpErrors.BadRequest('The request is expired.');
 
     // Checking who is requesting.
     const bankIssueRequest = await bankModel.getByPartnerCode(partnerCode);

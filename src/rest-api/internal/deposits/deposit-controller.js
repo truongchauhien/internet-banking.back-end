@@ -2,6 +2,7 @@ import HttpErrors from '../../commons/errors/http-errors.js';
 import * as depositModel from '../../../models/deposit-model.js';
 import * as accountModel from '../../../models/account-model.js';
 import * as customerModel from '../../../models/customer-model.js';
+import CURRENCIES from '../../../models/constants/currencies.js';
 
 export const createDeposit = async (req, res) => {
     const { userName, accountNumber, amount } = req.body;
@@ -10,7 +11,7 @@ export const createDeposit = async (req, res) => {
     if (userName) {
         const customer = await customerModel.getByUserName(userName)
         if (!customer) throw new HttpErrors.NotFound();
-        const currentAccount = await accountModel.getCurrentAccountByCustomerId(customer.id);
+        const currentAccount = await accountModel.getDefaultCurrentAccountByCustomerId(customer.id);
         accountId = currentAccount.id;
     } else if (accountNumber) {
         const account = await accountModel.getByAccountNumber(accountNumber);
@@ -22,7 +23,8 @@ export const createDeposit = async (req, res) => {
 
     const deposit = {
         amount,
-        accountId
+        accountId,
+        currencyId: CURRENCIES.VND
     };
 
     const createdDeposit = await depositModel.create(deposit);

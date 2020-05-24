@@ -10,13 +10,13 @@ import {
 
 export const createDebt = async (req, res) => {
     const { userId: customerId } = req.auth;
-    let { toCustomerHasAccountNumber, amount: rawAmount, message: rawMessage } = req.body;
+    let { toAccountNumber, amount: rawAmount, message: rawMessage } = req.body;
 
     const amount = Number.parseInt(rawAmount) || 0;
     if (amount <= 0) throw new HttpErrors.BadRequest();
     const message = rawMessage || '';
 
-    const toCustomer = await customerModel.getByAccountNumber(toCustomerHasAccountNumber);
+    const toCustomer = await customerModel.getByAccountNumber(toAccountNumber);
     if (!toCustomer) throw new HttpErrors.BadRequest();
     if (customerId === toCustomer.id) throw new HttpErrors.BadRequest(); // A customer sends debt to himself/herself.
     const fromCustomer = await customerModel.getById(customerId);
@@ -41,7 +41,7 @@ export const getDebts = async (req, res) => {
     let newOnly = rawNewOnly === 'true';
     let startingAfter = Number.parseInt(rawStartingAfter) || null;
 
-    const limit = 1;
+    const limit = 5;
 
     let debts;
     switch (type) {
@@ -85,12 +85,12 @@ export const cancelDebt = async (req, res) => {
         canceledReason
     });
 
-    if (customerId === debt.fromCustomerId) {
-        const receiver = await customerModel.getById(debt.toCustomerId);
-        notifyDebtCanceledBySender(receiver.id, receiver.fullName, canceledReason);
+    const sender = await customerModel.getById(debt.fromCustomerId);
+    const receiver = await customerModel.getById(debt.toCustomerId);
+    if (customerId === sender.id) {
+        notifyDebtCanceledBySender(receiver.id, sender.fullName, canceledReason);
     } else {
-        const sender = await customerModel.getById(debt.fromCustomerId);
-        notifyDebtCanceledByReceiver(sender.id, sender.fullName, canceledReason);
+        notifyDebtCanceledByReceiver(sender.id, receiver.fullName, canceledReason);
     }
 
     return res.status(200).end();

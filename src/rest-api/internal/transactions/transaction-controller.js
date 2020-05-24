@@ -15,7 +15,7 @@ export const getOwnTransactions = async (req, res) => {
         throw new HttpErrorClasses.Forbidden();
 
     const startingAfter = Number.parseInt(rawStartingAfter) || null;
-    const limit = 1;
+    const limit = 5;
     const transactions = await transactionModel.findByAccountId(account.id, limit + 1, startingAfter);
 
     let hasMore = false;

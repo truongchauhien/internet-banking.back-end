@@ -10,7 +10,7 @@ export const createDebt = async ({ fromCustomerId, toCustomerId, message, amount
         toCustomerId,
         message,
         amount,
-        currencyId: CURRENCIES.vnd,
+        currencyId: CURRENCIES.VND,
         statusId: DEBT_STATUS.NEW
     };
 

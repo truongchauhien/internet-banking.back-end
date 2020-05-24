@@ -21,7 +21,7 @@ export const getReconciliations = async (req, res) => {
 };
 
 export const createReconciliation = async (req, res) => {
-    const { fromTime: rawFromTime, toTime: rawToTime, bankId = null } = req.body;
+    const { fromTime: rawFromTime, toTime: rawToTime, withBankId = null } = req.body;
 
     const fromTime = new Date(rawFromTime);
     const toTime = new Date(rawToTime);
@@ -32,7 +32,7 @@ export const createReconciliation = async (req, res) => {
     const createdReconciliation = await reconciliationModel.create({
         fromTime,
         toTime,
-        bankId,
+        withBankId,
         isGenerating: true
     });
 

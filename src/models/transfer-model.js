@@ -6,6 +6,7 @@ import CURRENCIES from './constants/currencies.js';
 import TransactionCanceled from './extensions/transaction-canceled.js';
 import TRANSFER_TYPES from './constants/transfer-types.js';
 import DEBT_STATUS from './constants/debt-status.js';
+import BANKS from './constants/banks.js';
 
 export const getTransferById = async (transferId) => {
     const [results] = await pool_query('SELECT * FROM transfers WHERE id = ?', [transferId]);
@@ -70,8 +71,8 @@ export const createIntrabankTransfer = ({ fromAccountNumber, toAccountNumber, am
             toCustomerId: toAccount.customerId,
             fromAccountNumber,
             toAccountNumber,
-            fromBankId: null,
-            toBankId: null,
+            fromBankId: BANKS.INTERNAL,
+            toBankId: BANKS.INTERNAL,
             fromCurrencyId: fromAccount.currencyId,
             toCurrencyId: toAccount.currencyId,
             fromAmount: amount,
@@ -134,7 +135,7 @@ export const createInterbankTransfer = ({ fromAccountNumber, toAccountNumber, to
             toCustomerId: null,
             fromAccountNumber,
             toAccountNumber,
-            fromBankId: null,
+            fromBankId: BANKS.INTERNAL,
             toBankId: toBankId,
             fromCurrencyId: fromAccount.currencyId,
             toCurrencyId: CURRENCIES.VND,
@@ -185,8 +186,8 @@ export const createPayDebtTransfer = ({ debtId, fromAccountNumber, toAccountNumb
             toCustomerId: toAccount.customerId,
             fromAccountNumber,
             toAccountNumber,
-            fromBankId: null,
-            toBankId: null,
+            fromBankId: BANKS.INTERNAL,
+            toBankId: BANKS.INTERNAL,
             fromCurrencyId: fromAccount.currencyId,
             toCurrencyId: toAccount.currencyId,
             fromAmount: amount,
@@ -323,7 +324,7 @@ export const confirmPayDebtTransfer = (transferId) => {
         if (fromAccount.balance < senderLowerBoundBalance) throw new TransactionCanceled();
 
         [results] = await connection.query('UPDATE accounts SET balance = ? WHERE id = ?', [
-            fromAccount.balance - - transfer.fromAmount - transfer.fromFee,
+            fromAccount.balance - transfer.fromAmount - transfer.fromFee,
             fromAccount.id
         ]);
         [results] = await connection.query('UPDATE accounts SET balance = ? WHERE id = ?', [

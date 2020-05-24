@@ -83,8 +83,10 @@ export const createTransfer = async (req, res) => {
     }
 
     if (Number.isNaN(createdAt.getTime())) throw new HttpErrors.BadRequest('Bad createdAt.');
-    const timeDiffInMinutes = Math.round((Date.now() - createdAt.getTime()) / 1000 / 60);
-    if (timeDiffInMinutes < 0 || timeDiffInMinutes > 5) throw new HttpErrors.BadRequest('The request is expired.');
+    const timeDiffInMinutes = Math.abs(
+        Math.round((Date.now() - createdAt.getTime()) / 1000 / 60)
+    );
+    if (timeDiffInMinutes > 5) throw new HttpErrors.BadRequest('The request is expired.');
 
     // Checking who is requesting.
     const bankIssuedRequest = await bankModel.getByPartnerCode(partnerCode);

@@ -11,6 +11,7 @@ import generateTOTP from '../../../modules/otp/generate-totp.js';
 import verifyTOTP from '../../../modules/otp/verify-totp.js';
 import { sendOtpMailForTransferCofirmation } from '../../../modules/mail/send-otp-mail.js';
 import { notifyDebtPaid } from '../../../modules/push-service/customer-pusher.js';
+import BANKS from '../../../models/constants/banks.js';
 import bankingApiModules from '../../../modules/banking-api-modules/banking-api-modules.js';
 
 export const createTransfer = async (req, res) => {
@@ -95,6 +96,7 @@ async function createInterbankTransfer(req, res) {
     if (!customer) throw new HttpErrors.BadRequest();
     if (customer.id !== customerId) throw new HttpErrors.Forbidden();
 
+    if (toBankId == BANKS.INTERNAL) throw new HttpErrors.BadRequest();    
     const bankingApiModule = bankingApiModules[toBankId];
     if (!bankingApiModule) throw new HttpErrors.BadRequest();
     const toAccount = await bankingApiModule.getAccount({ accountNumber: toAccountNumber });
@@ -127,8 +129,8 @@ async function createPayDebtTransfer(req, res) {
     // Who is paying for the debt is who received the debt.
     if (customerId !== debt.toCustomerId) throw new HttpErrors.Forbidden();
     const whoPaysDebt = await customerModel.getById(debt.toCustomerId);
-    const whoCreatedDebtCurrentAccount = await accountModel.getCurrentAccountByCustomerId(debt.fromCustomerId);
-    const whoPaysDebtCurrentAccount = await accountModel.getCurrentAccountByCustomerId(debt.toCustomerId);
+    const whoCreatedDebtCurrentAccount = await accountModel.getDefaultCurrentAccountByCustomerId(debt.fromCustomerId);
+    const whoPaysDebtCurrentAccount = await accountModel.getDefaultCurrentAccountByCustomerId(debt.toCustomerId);
 
     const otp = generateTOTP(whoPaysDebt.otpSecret);
     const createdTransfer = await transferModel.createPayDebtTransfer({

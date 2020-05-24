@@ -27,6 +27,6 @@ export const getById = async id => {
     return null;
 }
 
-export const update = (id, changes) => {
+export const updateById = (id, changes) => {
     return pool_query('UPDATE administrators SET ? WHERE id = ?', [changes, id]);
 };
