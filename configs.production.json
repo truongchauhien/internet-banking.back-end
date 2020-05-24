@@ -27,5 +27,8 @@
         "port": 5672,
         "user": "root",
         "pass": "Th3B3stP@ssw0rd3v3r"
+    },
+    "bankingApiModules": {
+        "path": "./banking-api-modules-for-production"
     }
 }

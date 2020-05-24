@@ -1,4 +1,4 @@
-import { readdirSync } from 'fs';
+import fs, { promises as fsasync } from 'fs';
 import path, { dirname } from 'path';
 import url from 'url';
 import configs from '../configs/configs.js';
@@ -17,12 +17,18 @@ export const setup = async () => {
     const importedBankingApiModules = await importBankingApiModules();
 
     for (const bank of banksHasApi) {
-        const respectiveBankingApiModule = importedBankingApiModules.find(
-            apiModule => bank.id === apiModule.meta.bankId
-        );
-
-        respectiveBankingApiModule.meta.name = bank.name;
-        bankingApiModules[bank.id] = respectiveBankingApiModule;
+        const importedBankingApiModule = importedBankingApiModules[bank.id];
+        
+        if (!importedBankingApiModule) {
+            logger.warn(`${bank.id}:${bank.name} does not have banking API module.`);
+            continue;
+        };
+        
+        importedBankingApiModule.meta.name = bank.name;
+        importedBankingApiModule.meta.partnerCode = bank.partnerCode;
+        importedBankingApiModule.meta.secretKey = bank.secretKey;
+        
+        bankingApiModules[bank.id] = importedBankingApiModule;
     }
 
     isSetup = true;
@@ -30,19 +36,20 @@ export const setup = async () => {
 };
 
 async function importBankingApiModules() {
-    const modules = [];
+    const modules = {};
 
     const pathToBankingApiModules = path.resolve(configs.get('bankingApiModules.path'));
-    const dirNames = readdirSync(pathToBankingApiModules, { withFileTypes: true })
+    const dirNames = (await fsasync.readdir(pathToBankingApiModules, { withFileTypes: true }))
         .filter(dir => dir.isDirectory())
         .map(dir => dir.name);
 
     for (const dirName of dirNames) {
         const pathToModuleFile = path.resolve(pathToBankingApiModules, `${dirName}/index.js`);
+        if (!fs.existsSync(pathToModuleFile)) continue;
         const urlToModule = url.pathToFileURL(pathToModuleFile);
         const bankingApiModule = await import(urlToModule);
         bankingApiModule.setup && await bankingApiModule.setup();
-        modules.push(bankingApiModule);
+        modules[bankingApiModule.meta.bankId] = bankingApiModule;
     }
 
     return modules;
