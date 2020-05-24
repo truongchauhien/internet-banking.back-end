@@ -7,6 +7,8 @@ import CURRENCIES from '../../../models/constants/currencies.js';
 export const createDeposit = async (req, res) => {
     const { userName, accountNumber, amount } = req.body;
 
+    if (!amount || typeof amount !== 'number' || amount <= 0) throw new HttpErrors.BadRequest('Bad amount');
+
     let accountId;
     if (userName) {
         const customer = await customerModel.getByUserName(userName)
