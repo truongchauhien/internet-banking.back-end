@@ -4,7 +4,7 @@ import convict from 'convict';
 /*
 Notice:
 - Environment variables that are already defined in `process.env` will not be overwritten by dotenv.
-- You can use 'cross-env' to set environment variables in commandline or npm scripts, and the values will not be overritten.
+- You can use 'cross-env' to set environment variables in commandline or npm scripts, and the values will not be overwritten.
 */
 dotenv.config();
 

@@ -6,7 +6,7 @@
         "port": 3306,
         "user": "root",
         "password": "Th3B3stP@ssw0rd3v3r",
-        "name": "InternetBanking_Testing"
+        "name": "InternetBanking_testing"
     },
     "tokenSecretKey": "S3cretK3y_",
     "recaptchaSecretKey": "6LdL4D8UAAAAALFz1qpupKxSoHcAovthGQrm6ptO",
