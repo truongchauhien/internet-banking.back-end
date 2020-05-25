@@ -96,7 +96,7 @@ async function createInterbankTransfer(req, res) {
     if (!customer) throw new HttpErrors.BadRequest();
     if (customer.id !== customerId) throw new HttpErrors.Forbidden();
 
-    if (toBankId == BANKS.INTERNAL) throw new HttpErrors.BadRequest();    
+    if (toBankId == BANKS.INTERNAL) throw new HttpErrors.BadRequest();
     const bankingApiModule = bankingApiModules[toBankId];
     if (!bankingApiModule) throw new HttpErrors.BadRequest();
     const toAccount = await bankingApiModule.getAccount({ accountNumber: toAccountNumber });
@@ -191,7 +191,8 @@ async function confirmInterbankTransfer(req, res) {
     const currency = await currencyModel.getById(transfer.toCurrencyId);
     if (!currency) throw new HttpErrors.InternalServerError();
     if (!await bankingApiModule.transfer({
-        accountNumber: transfer.toAccountNumber,
+        fromAccountNumber: transfer.fromAccountNumber,
+        toAccountNumber: transfer.toAccountNumber,
         amount: transfer.toAmount,
         currency: currency.code,
         message: transfer.message
