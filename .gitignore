@@ -1,3 +1,7 @@
 node_modules
 .vscode
-banking-api-modules
+
+reconciliations/*
+!reconciliations/readme.md
+
+combined.log
