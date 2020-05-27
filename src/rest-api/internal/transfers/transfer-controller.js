@@ -7,12 +7,13 @@ import * as transferModel from '../../../models/transfer-model.js';
 import * as debtModel from '../../../models/debt-model.js';
 import * as currencyModel from '../../../models/currency-model.js';
 import TRANSFER_TYPES from '../../../models/constants/transfer-types.js';
+import CURRENCIES from '../../../models/constants/currencies.js';
+import BANKS from '../../../models/constants/banks.js';
+import bankingApiModules from '../../../modules/banking-api-modules/banking-api-modules.js';
 import generateTOTP from '../../../modules/otp/generate-totp.js';
 import verifyTOTP from '../../../modules/otp/verify-totp.js';
 import { sendOtpMailForTransferCofirmation } from '../../../modules/mail/send-otp-mail.js';
 import { notifyDebtPaid } from '../../../modules/push-service/customer-pusher.js';
-import BANKS from '../../../models/constants/banks.js';
-import bankingApiModules from '../../../modules/banking-api-modules/banking-api-modules.js';
 
 export const createTransfer = async (req, res) => {
     const { type: transferType } = req.body;
@@ -108,6 +109,7 @@ async function createInterbankTransfer(req, res) {
         toAccountNumber,
         toBankId,
         amount,
+        toCurrencyId: CURRENCIES.VND,
         message,
         otp,
         whoPayFee

@@ -51,7 +51,11 @@ export const getById = (accountId) => {
 };
 
 async function getAccount(identityType, identity) {
-    const [results] = await pool_query('SELECT * FROM accounts WHERE ?? = ?', [identityType, identity]);
+    const [results] = await pool_query(
+        'SELECT accounts.*, account_types.type ' +
+        'FROM accounts ' +
+        '    INNER JOIN account_types ON accounts.typeId = account_types.id ' +
+        'WHERE accounts.?? = ?', [identityType, identity]);
     if (Array.isArray(results) && results.length > 0) {
         return results[0];
     }

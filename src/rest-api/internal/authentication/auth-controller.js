@@ -246,7 +246,7 @@ async function confirmPasswordResetForCustomer(req, res) {
     if (!verifyTOTP(otp, customer.otpSecret, 10)) throw new HttpErrors.Forbidden();
 
     const hashedPassword = await bcrypt.hash(newPassword, 12);
-    await customerModel.update(customer.id, {
+    await customerModel.updateById(customer.id, {
         password: hashedPassword
     });
 

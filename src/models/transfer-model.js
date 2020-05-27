@@ -94,7 +94,7 @@ export const createIntrabankTransfer = ({ fromAccountNumber, toAccountNumber, am
     });
 };
 
-export const createInterbankTransfer = ({ fromAccountNumber, toAccountNumber, toBankId, amount, currencyId, whoPayFee, message, otp }) => {
+export const createInterbankTransfer = ({ fromAccountNumber, toAccountNumber, toBankId, amount, toCurrencyId, whoPayFee, message, otp }) => {
     return doTransaction(async (connection) => {
         const currentDate = new Date();
 
@@ -102,7 +102,7 @@ export const createInterbankTransfer = ({ fromAccountNumber, toAccountNumber, to
         [results] = await connection.query('SELECT customerId, currencyId FROM accounts WHERE accountNumber = ?', [fromAccountNumber]);
         const fromAccount = results[0];
         [results] = await connection.query('SELECT exchangeRate FROM exchange_rates WHERE fromCurrencyId = ? AND toCurrencyId = ? AND fromDate <= ? AND ? < toDate ',
-            [fromAccount.currencyId, CURRENCIES.VND, currentDate, currentDate]
+            [fromAccount.currencyId, toCurrencyId, currentDate, currentDate]
         );
         const exchangeRate = results[0].exchangeRate;
         const fromAmount = amount;
@@ -123,7 +123,7 @@ export const createInterbankTransfer = ({ fromAccountNumber, toAccountNumber, to
         }
         if (whoPayFee === 'beneficiary') {
             [results] = await connection.query('SELECT exchangeRate FROM exchange_rates WHERE fromCurrencyId = ? AND toCurrencyId = ? AND fromDate <= ? AND ? < toDate ',
-                [CURRENCIES.VND, fee.currencyId, currentDate, currentDate]
+                [toCurrencyId, fee.currencyId, currentDate, currentDate]
             );
             const feeExchangeRate = results[0].exchangeRate;
             fromFee = 0;
@@ -138,7 +138,7 @@ export const createInterbankTransfer = ({ fromAccountNumber, toAccountNumber, to
             fromBankId: BANKS.INTERNAL,
             toBankId: toBankId,
             fromCurrencyId: fromAccount.currencyId,
-            toCurrencyId: CURRENCIES.VND,
+            toCurrencyId: toCurrencyId,
             fromAmount,
             toAmount,
             fromFee,

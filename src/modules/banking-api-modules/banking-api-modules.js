@@ -18,16 +18,13 @@ export const setup = async () => {
 
     for (const bank of banksHasApi) {
         const importedBankingApiModule = importedBankingApiModules[bank.id];
-        
+
         if (!importedBankingApiModule) {
             logger.warn(`${bank.id}:${bank.name} does not have banking API module.`);
             continue;
         };
-        
+
         importedBankingApiModule.meta.name = bank.name;
-        importedBankingApiModule.meta.partnerCode = bank.partnerCode;
-        importedBankingApiModule.meta.secretKey = bank.secretKey;
-        
         bankingApiModules[bank.id] = importedBankingApiModule;
     }
 
