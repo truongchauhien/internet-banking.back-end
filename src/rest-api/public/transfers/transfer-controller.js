@@ -1,7 +1,7 @@
 import fs from 'fs';
 import bcrypt from 'bcrypt';
-import openpgp from 'openpgp';
 import pgpService from '../../../modules/pgp-service/index.js';
+import rsaService from '../../../modules/rsa-service/index.js';
 import HttpErrors from '../../commons/errors/http-errors.js';
 import bankingApiModules from '../../../modules/banking-api-modules/banking-api-modules.js';
 import * as bankModel from '../../../models/bank-model.js';
@@ -134,15 +134,28 @@ export const createTransfer = async (req, res) => {
             },
         },
         hash: '',
-        signature: ''
+        signature: '',
+        signatureAlgorithm: ''
     };
 
     const requestCreatedAt = rawCreatedAt;
     const responseCreatedAt = returnResult.response.meta.createdAt.toISOString();
     const responsePreHashString = `${fromAccountNumber}|${toAccountNumber}|${amount}|${currency}|${partnerCode}|${requestCreatedAt}|${responseCreatedAt}|${secretKey}`;
     returnResult.hash = await bcrypt.hash(responsePreHashString, 10);
-    const responsePreSignString = `${fromAccountNumber}|${toAccountNumber}|${amount}|${currency}|${partnerCode}|${requestCreatedAt}|${responseCreatedAt}`;
-    returnResult.signature = await pgpService.sign(responsePreSignString);
 
+    const responsePreSignString = `${fromAccountNumber}|${toAccountNumber}|${amount}|${currency}|${partnerCode}|${requestCreatedAt}|${responseCreatedAt}`;
+    switch (req.body.signatureAlgorithm) {
+        default:
+        case 'OpenPGP':
+            returnResult.signature = await pgpService.sign(responsePreSignString);
+            returnResult.signatureAlgorithm = 'OpenPGP';
+            break;
+        case 'RSA':
+        case 'RSA-SHA256-Base64':
+            returnResult.signature = await rsaService.sign(responsePreSignString, { hashAlgorithm: 'SHA256', signatureFormat: 'base64' });
+            returnResult.signatureAlgorithm = req.body.signatureAlgorithm;
+            break;
+    }
+    
     return res.status(200).json(returnResult);
 };
