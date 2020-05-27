@@ -134,8 +134,7 @@ export const createTransfer = async (req, res) => {
             },
         },
         hash: '',
-        signature: '',
-        signatureAlgorithm: ''
+        signature: ''
     };
 
     const requestCreatedAt = rawCreatedAt;
@@ -144,18 +143,8 @@ export const createTransfer = async (req, res) => {
     returnResult.hash = await bcrypt.hash(responsePreHashString, 10);
 
     const responsePreSignString = `${fromAccountNumber}|${toAccountNumber}|${amount}|${currency}|${partnerCode}|${requestCreatedAt}|${responseCreatedAt}`;
-    switch (req.body.signatureAlgorithm) {
-        default:
-        case 'OpenPGP':
-            returnResult.signature = await pgpService.sign(responsePreSignString);
-            returnResult.signatureAlgorithm = 'OpenPGP';
-            break;
-        case 'RSA':
-        case 'RSA-SHA256-Base64':
-            returnResult.signature = await rsaService.sign(responsePreSignString, { hashAlgorithm: 'SHA256', signatureFormat: 'base64' });
-            returnResult.signatureAlgorithm = req.body.signatureAlgorithm;
-            break;
-    }
+    returnResult.signature = await pgpService.sign(responsePreSignString);
+    // returnResult.signature = await rsaService.sign(responsePreSignString, { hashAlgorithm: 'SHA256', signatureFormat: 'base64' });
     
     return res.status(200).json(returnResult);
 };
