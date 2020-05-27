@@ -11,12 +11,12 @@
     "tokenSecretKey": "S3cretK3y_",
     "recaptchaSecretKey": "6LdL4D8UAAAAALFz1qpupKxSoHcAovthGQrm6ptO",
     "smtp": {
-        "host": "smtp.ethereal.email",
-        "port": 587,
+        "host": "localhost",
+        "port": 1025,
         "secure": false,
         "auth": {
-            "user": "kameron.stokes66@ethereal.email",
-            "pass": "N5PWSUt3H352yFXRTw"
+            "user": "project.1",
+            "pass": "secret.1"
         }
     },
     "emailSenders": {
