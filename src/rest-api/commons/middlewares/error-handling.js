@@ -22,16 +22,22 @@ export const errorHandler = (err, req, res, next) => {
         }
         if (typeof err.meta === 'string') {
             return res.json({
-                message: err.meta
+                error: {
+                    message: err.meta
+                }
             });
         } else {
-            return res.json(err.meta);
+            return res.json({
+                error: err.meta
+            });
         }
     } else if (err instanceof MySqlError) {
         logger.error(JSON.stringify(err));
         switch (err.code) {
             case 'ER_DUP_ENTRY':
-                return res.status(400).json(ERRORS[1001]);
+                return res.status(400).json({
+                    error: ERRORS[1001]
+                });
             default:
                 return res.status(500).end();
         }
@@ -41,10 +47,14 @@ export const errorHandler = (err, req, res, next) => {
             return res.status(400).end();
         } else if (typeof err.meta === 'string') {
             return res.status(400).json({
-                message: err.meta
+                error: {
+                    message: err.meta
+                }
             });
         } else {
-            return res.status(400).json(err.meta);
+            return res.status(400).json({
+                error: err.meta
+            });
         }
     } else {
         logger.error(err.name + '\n' + err.message + '\n' + err.stack);
